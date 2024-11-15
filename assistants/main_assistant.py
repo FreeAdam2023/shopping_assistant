@@ -34,45 +34,53 @@ class MainAssistant:
                 ("placeholder", "{messages}"),
             ]
         )
-        # 定义工具分组
-        self.safe_tools = [
-            SerpAPIWrapper(),  # 一般知识查询工具（如 Google 搜索）
-            search_products,  # 产品搜索工具
-            query_policy,  # 政策查询工具
-        ]
+        # 工具集合
+        self.tools = {
+            "search_products": search_products,  # 产品搜索工具
+            "query_policy": query_policy,  # 政策查询工具
+            "general_query": SerpAPIWrapper(),  # 一般知识查询工具
+        }
 
-    def __call__(self, state, config):
+    def __call__(self, state):
         """
-        Executes the assistant logic by processing the current state and configuration.
+        Makes the MainAssistant class callable.
 
         Args:
             state (dict): The current state of the conversation.
-            config (dict): Configuration options for the assistant.
 
         Returns:
-            dict: The response from the assistant.
+            dict: The response after processing the user's request.
         """
-        # 将工具绑定到提示模板
-        runnable_safe = self.prompt | llm.bind_tools(self.safe_tools)
+        action = state.get("action")  # 动作类型
+        tool_name = state.get("tool")  # 目标工具名称
 
-        # 调用安全工具处理用户请求
-        return self._handle_tool_execution(state, runnable_safe)
+        # 检查工具是否支持
+        if tool_name not in self.tools:
+            return {"error": f"Unsupported tool: {tool_name}"}
 
-    def _handle_tool_execution(self, state, runnable_safe):
+        # 获取工具并执行
+        tool = self.tools[tool_name]
+        return self._execute_tool(state, tool)
+
+    def _execute_tool(self, state, tool):
         """
-        Handle the execution of safe tools.
+        Executes the specified tool with the provided state.
 
         Args:
             state (dict): The current state of the conversation.
-            runnable_safe: The runnable for safe tools.
+            tool (Callable): The tool to execute.
 
         Returns:
-            dict: The response after executing the tool.
+            dict: The response from the tool or an error message.
         """
         try:
-            response = runnable_safe.invoke(state)
-            return response
+            # 将工具绑定到提示模板
+            runnable = self.prompt | llm.bind_tools([tool])
+            # 执行工具
+            return runnable.invoke(state)
         except Exception as e:
-            # 捕获执行中的异常并返回错误消息
-            return {"error": f"An error occurred during tool execution: {str(e)}"}
-
+            # 捕获执行中的异常并返回详细错误信息
+            tool_name = getattr(tool, "__name__", "unknown_tool")
+            return {
+                "error": f"An error occurred during execution of {tool_name}: {str(e)}"
+            }

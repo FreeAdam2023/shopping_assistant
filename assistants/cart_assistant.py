@@ -33,6 +33,22 @@ class CartAssistant:
         self.safe_tools = [view_cart]
         self.sensitive_tools = [add_to_cart, remove_from_cart]
 
+    def __call__(self, state: dict):
+        """
+        Makes the CartAssistant class callable.
+
+        Args:
+            state (dict): The current state, including the user's action and parameters.
+
+        Returns:
+            dict: The response after processing the action.
+        """
+        action = state.get("action")
+        product_id = state.get("product_id")
+        user_id = state.get("user_id", 1)
+
+        return self.handle(action, product_id=product_id, user_id=user_id)
+
     def handle(self, action: str, product_id: int = None, user_id: int = 1):
         """
         Handle user actions such as viewing the cart, adding items, or removing items.
@@ -45,54 +61,61 @@ class CartAssistant:
         Returns:
             dict: The response after executing the action.
         """
-        # 安全操作处理
-        if action == "view":
-            return self._execute_safe_tool(view_cart, {"user_id": user_id})
+        # 操作映射到工具
+        tool_mapping = {
+            "view": (view_cart, False),
+            "add": (add_to_cart, True),
+            "remove": (remove_from_cart, True),
+        }
 
-        # 敏感操作处理
-        elif action in ["add", "remove"]:
-            if not product_id:
-                return {"error": "Product ID is required for 'add' or 'remove' actions."}
-            tool = add_to_cart if action == "add" else remove_from_cart
-            return self._execute_sensitive_tool(tool, {"user_id": user_id, "product_id": product_id})
-
-        # 未知操作
-        else:
+        # 确认操作是否支持
+        if action not in tool_mapping:
             return {"error": f"Unsupported action: {action}"}
 
-    def _execute_safe_tool(self, tool, params: dict):
+        tool, is_sensitive = tool_mapping[action]
+
+        # 检查必需参数
+        if action in ["add", "remove"] and not product_id:
+            return {"error": f"Product ID is required for '{action}' action."}
+
+        # 执行工具
+        params = {"user_id": user_id}
+        if product_id:
+            params["product_id"] = product_id
+
+        return self._execute_tool(tool, params, is_sensitive)
+
+    def _execute_tool(self, tool, params: dict, is_sensitive: bool):
         """
-        Execute a safe tool (no confirmation required).
+        Execute a tool (safe or sensitive).
 
         Args:
             tool (Callable): The tool to execute.
             params (dict): Parameters to pass to the tool.
+            is_sensitive (bool): Whether the tool requires confirmation.
 
         Returns:
-            dict: The response from the tool.
+            dict: The response after executing the tool.
         """
-        runnable = self.prompt | llm.bind_tools([tool])
-        state = {"messages": [{"role": "user", "content": f"Safe action: {tool.__name__} with params {params}"}]}
-        return runnable.invoke(state)
+        state = {"messages": []}
 
-    def _execute_sensitive_tool(self, tool, params: dict):
-        """
-        Execute a sensitive tool (requires user confirmation).
+        if is_sensitive:
+            # 添加确认消息
+            state["messages"].append(
+                {
+                    "role": "assistant",
+                    "content": f"Are you sure you want to execute: {tool.__name__} with parameters {params}? Please confirm."
+                }
+            )
+        else:
+            # 添加直接操作消息
+            state["messages"].append(
+                {
+                    "role": "user",
+                    "content": f"Executing: {tool.__name__} with parameters {params}."
+                }
+            )
 
-        Args:
-            tool (Callable): The tool to execute.
-            params (dict): Parameters to pass to the tool.
-
-        Returns:
-            dict: The response after user confirmation.
-        """
-        # 模拟确认步骤
-        confirmation_prompt = {
-            "role": "assistant",
-            "content": f"Are you sure you want to proceed with this action: {tool.__name__} with params {params}? Please confirm.",
-        }
-        state = {"messages": [confirmation_prompt]}
-
-        # 将工具绑定到提示模板
+        # 将工具绑定到提示模板并执行
         runnable = self.prompt | llm.bind_tools([tool])
         return runnable.invoke(state)

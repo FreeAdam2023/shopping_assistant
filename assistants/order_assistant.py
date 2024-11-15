@@ -34,6 +34,22 @@ class OrderAssistant:
         self.safe_tools = [get_order_status]
         self.sensitive_tools = [checkout]
 
+    def __call__(self, state: dict):
+        """
+        Makes the OrderAssistant class callable.
+
+        Args:
+            state (dict): The current state, including the user's action and parameters.
+
+        Returns:
+            dict: The response after processing the action.
+        """
+        action = state.get("action")
+        order_id = state.get("order_id")
+        user_id = state.get("user_id", 1)
+
+        return self.handle(action, order_id=order_id, user_id=user_id)
+
     def handle(self, action: str, order_id: int = None, user_id: int = 1):
         """
         Handle user actions such as querying order details or initiating checkout.
@@ -46,57 +62,48 @@ class OrderAssistant:
         Returns:
             dict: The response after executing the action.
         """
-        # 安全操作处理
         if action == "query":
-            if order_id:
-                params = {"order_id": order_id, "user_id": user_id}
-                return self._execute_safe_tool(get_order_status, params)
-            else:
-                params = {"user_id": user_id}
-                return self._execute_safe_tool(get_order_status, params)
+            params = {"order_id": order_id, "user_id": user_id} if order_id else {"user_id": user_id}
+            return self._execute_tool(get_order_status, params, is_sensitive=False)
 
-        # 敏感操作处理
         elif action == "checkout":
             params = {"user_id": user_id}
-            return self._execute_sensitive_tool(checkout, params)
+            return self._execute_tool(checkout, params, is_sensitive=True)
 
-        # 未知操作
         else:
             return {"error": f"Unsupported action: {action}"}
 
-    def _execute_safe_tool(self, tool, params: dict):
+    def _execute_tool(self, tool, params: dict, is_sensitive: bool):
         """
-        Execute a safe tool (no confirmation required).
+        Execute a tool (safe or sensitive).
 
         Args:
             tool (Callable): The tool to execute.
             params (dict): Parameters to pass to the tool.
+            is_sensitive (bool): Whether the tool requires confirmation.
 
         Returns:
-            dict: The response from the tool.
+            dict: The response after executing the tool.
         """
-        runnable = self.prompt | llm.bind_tools([tool])
-        state = {"messages": [{"role": "user", "content": f"Safe action: {tool.__name__} with params {params}"}]}
-        return runnable.invoke(state)
+        state = {"messages": []}
 
-    def _execute_sensitive_tool(self, tool, params: dict):
-        """
-        Execute a sensitive tool (requires user confirmation).
+        if is_sensitive:
+            # 添加确认消息
+            state["messages"].append(
+                {
+                    "role": "assistant",
+                    "content": f"Are you sure you want to execute: {tool.__name__} with parameters {params}? Please confirm."
+                }
+            )
+        else:
+            # 添加直接操作消息
+            state["messages"].append(
+                {
+                    "role": "user",
+                    "content": f"Executing: {tool.__name__} with parameters {params}."
+                }
+            )
 
-        Args:
-            tool (Callable): The tool to execute.
-            params (dict): Parameters to pass to the tool.
-
-        Returns:
-            dict: The response after user confirmation.
-        """
-        # 模拟确认步骤
-        confirmation_prompt = {
-            "role": "assistant",
-            "content": f"Are you sure you want to proceed with this action: {tool.__name__} with params {params}? Please confirm.",
-        }
-        state = {"messages": [confirmation_prompt]}
-
-        # 将工具绑定到提示模板
+        # 将工具绑定到提示模板并执行
         runnable = self.prompt | llm.bind_tools([tool])
         return runnable.invoke(state)

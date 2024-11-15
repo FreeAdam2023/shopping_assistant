@@ -1,4 +1,3 @@
-
 import os
 from typing import Optional
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,7 +16,6 @@ llm = ChatOpenAI(model="gpt-4-turbo", temperature=1, api_key=os.getenv('OPENAI_A
 class ProductAssistant:
     """Handles product search, cart management, and checkout actions."""
 
-
     def __init__(self):
         self.prompt = ChatPromptTemplate.from_messages(
             [
@@ -34,6 +32,23 @@ class ProductAssistant:
         # 定义工具分组
         self.safe_tools = [search_products, view_cart]
         self.sensitive_tools = [add_to_cart, remove_from_cart, checkout]
+
+    def __call__(self, state: dict):
+        """
+        Makes the ProductAssistant class callable.
+
+        Args:
+            state (dict): The current state, including the user's action and parameters.
+
+        Returns:
+            dict: The response after processing the action.
+        """
+        action = state.get("action")
+        query = state.get("query")
+        product_id = state.get("product_id")
+        user_id = state.get("user_id", 1)
+
+        return self.handle(action, query=query, product_id=product_id, user_id=user_id)
 
     def handle(self, action: str, query: Optional[str] = None, product_id: Optional[int] = None, user_id: int = 1):
         """
