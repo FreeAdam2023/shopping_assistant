@@ -20,19 +20,22 @@ def update_dialog_stack(left: List[str], right: Optional[str]) -> List[str]:
     Returns:
         List[str]: Updated state stack.
     """
-    logger.info("Current stack (left): %s", ", ".join(left) if left else "Empty stack")
-    logger.info("Operation (right): %s", right or "No operation")
+    # 使用自定义日志类记录信息
+    logger.info(f"Current stack (left): {', '.join(left) if left else 'Empty stack'}")
+    logger.info(f"Operation (right): {right or 'No operation'}")
 
-    # Perform stack operations
+    # 执行堆栈操作
     if right is None:
-        logger.info("Stack unchanged: %s", ", ".join(left) if left else "Empty stack")
+        logger.info(f"Stack unchanged: {', '.join(left) if left else 'Empty stack'}")
         return left
     if right == "pop":
-        logger.info("Stack after pop: %s", ", ".join(left[:-1]) if left[:-1] else "Empty stack")
-        return left[:-1]
+        updated_stack = left[:-1]
+        logger.info(f"Stack after pop: {', '.join(updated_stack) if updated_stack else 'Empty stack'}")
+        return updated_stack
     updated_stack = left + [right]
-    logger.info("Stack after push: %s", ", ".join(updated_stack))
+    logger.info(f"Stack after push: {', '.join(updated_stack)}")
     return updated_stack
+
 
 
 

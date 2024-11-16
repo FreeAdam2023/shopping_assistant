@@ -85,7 +85,7 @@ class Logger:
 
 
 # 实例化日志类
-logger = Logger(name='wordiverse-main.py')
+logger = Logger(name='main.py')
 #
 # # 使用示例
 # logger.info('Starting the Facebook crawl logs process.')
