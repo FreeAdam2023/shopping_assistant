@@ -24,7 +24,7 @@ def create_database_and_tables():
 
         # 创建产品表
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS products (
+        CREATE TABLE products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             description TEXT,
@@ -33,10 +33,11 @@ def create_database_and_tables():
             category TEXT NOT NULL,
             color TEXT DEFAULT NULL,
             size TEXT DEFAULT NULL,
-            additional_specs TEXT DEFAULT NULL, -- 使用 JSON 格式存储动态规格
+            additional_specs TEXT DEFAULT NULL,
+            image_url TEXT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
         """)
 
         # 创建购物车表
