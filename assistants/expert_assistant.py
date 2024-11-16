@@ -79,6 +79,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             "You are a product assistant specializing in helping users search for products, provice categories options, "
+            "If the user does not provide a specific query but asks about product categories, always call `list_categories`."
             "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
