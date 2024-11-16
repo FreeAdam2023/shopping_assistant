@@ -64,13 +64,15 @@ def create_database_and_tables():
         # 创建订单表
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            total_amount REAL NOT NULL,
-            status TEXT CHECK(status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')) DEFAULT 'Pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+            id INTEGER PRIMARY KEY AUTOINCREMENT, -- 订单ID
+            user_id INTEGER NOT NULL, -- 用户ID
+            total_amount REAL NOT NULL, -- 订单总金额
+            status TEXT CHECK(status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')) DEFAULT 'Pending', -- 订单状态
+            delivery_address TEXT DEFAULT NULL, -- 交货地址
+            cancellation_reason TEXT DEFAULT NULL, -- 取消原因
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 订单创建时间
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- 订单更新时间
+        );
         """)
 
         # 创建订单产品表

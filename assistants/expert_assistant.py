@@ -15,8 +15,8 @@ from state.state import State
 from pydantic import BaseModel, Field
 
 from tools.policy_tools import query_policy
-from tools.product_tools import search_products
-from tools.order_tools import search_orders, checkout
+from tools.product_tools import search_and_recommend_products
+from tools.order_tools import search_orders, checkout_order, update_delivery_address, cancel_order, get_recent_orders
 from tools.cart_tools import add_to_cart, view_cart, remove_from_cart
 
 llm = ChatOpenAI(model="gpt-4-turbo", temperature=1, api_key=os.getenv('OPENAI_API_KEY'))  # gpt-4-turbo  gpt-3.5-turbo
@@ -86,8 +86,8 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(time=datetime.now)
 
-product_safe_tools = [search_orders]
-product_sensitive_tools = [checkout]
+product_safe_tools = [search_and_recommend_products,]
+product_sensitive_tools = []
 product_tools = product_safe_tools + product_sensitive_tools
 product_runnable = product_assistant_prompt | llm.bind_tools(
     product_tools + [CompleteOrEscalate]
@@ -117,9 +117,8 @@ order_assistant_prompt = ChatPromptTemplate.from_messages(
 
 ).partial(time=datetime.now)
 
-order_safe_tools = [search_orders]
-# order_sensitive_tools = [checkout_order, update_order, cancel_order]
-order_sensitive_tools = [checkout]
+order_safe_tools = [search_orders, get_recent_orders]
+order_sensitive_tools = [checkout_order, update_delivery_address, cancel_order]
 order_tools = order_safe_tools + order_sensitive_tools
 order_runnable = order_assistant_prompt | llm.bind_tools(
     order_tools + [CompleteOrEscalate]
@@ -229,7 +228,6 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 
 primary_assistant_tools = [
     SerpAPIWrapper,
-    search_products,
     query_policy,
 ]
 assistant_runnable = primary_assistant_prompt | llm.bind_tools(

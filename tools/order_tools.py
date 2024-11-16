@@ -2,11 +2,14 @@
 @Time ： 2024-11-15
 @Auth ： Adam Lyu
 """
+"""
+@Time ： 2024-11-15
+@Auth ： Adam Lyu
+"""
 import json
-
-from langchain_core.tools import tool
 import sqlite3
 import os
+from langchain_core.tools import tool
 from utils.logger import logger
 
 # 定义数据库路径
@@ -14,7 +17,7 @@ db = os.path.join(os.path.dirname(__file__), "../data/database.db")
 
 
 @tool
-def checkout(user_id: int) -> str:
+def checkout_order(user_id: int) -> str:
     """
     Proceed to checkout for the user's cart.
 
@@ -114,9 +117,9 @@ def search_orders(order_id: int) -> str:
     try:
         # Query order information
         cursor.execute("""
-        SELECT o.id, o.user_id, o.total_amount, o.status, o.created_at, o.updated_at 
-        FROM orders o
-        WHERE o.id = ?
+        SELECT id, user_id, total_amount, status, delivery_address, cancellation_reason, created_at, updated_at 
+        FROM orders
+        WHERE id = ?
         """, (order_id,))
         order = cursor.fetchone()
 
@@ -125,15 +128,10 @@ def search_orders(order_id: int) -> str:
             return f"No order found with ID {order_id}."
 
         # Build order details
-        order_details = {
-            "Order ID": order[0],
-            "User ID": order[1],
-            "Total Amount": f"${order[2]:.2f}",
-            "Status": order[3],
-            "Created At": order[4],
-            "Updated At": order[5],
-            "Products": []
-        }
+        order_details = dict(zip(
+            ["Order ID", "User ID", "Total Amount", "Status", "Delivery Address", "Cancellation Reason", "Created At", "Updated At"],
+            order
+        ))
 
         # Query order products
         cursor.execute("""
@@ -154,6 +152,153 @@ def search_orders(order_id: int) -> str:
 
     except Exception as e:
         logger.error(f"Error retrieving order details for order {order_id}: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+@tool
+def update_delivery_address(order_id: int, new_address: str) -> str:
+    """
+    Update the delivery address of an order.
+
+    Args:
+        order_id (int): The ID of the order.
+        new_address (str): The new delivery address.
+
+    Returns:
+        str: Confirmation of the update.
+    """
+    logger.info(f"Updating delivery address for order {order_id}.")
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    try:
+        # Check if the order exists
+        cursor.execute("SELECT status FROM orders WHERE id = ?", (order_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            logger.warning(f"Order {order_id} not found.")
+            return f"No order found with ID {order_id}."
+
+        if result[0] in ("Shipped", "Delivered", "Cancelled"):
+            logger.warning(f"Cannot update address for order {order_id} with status: {result[0]}.")
+            return f"Cannot update address for order {order_id} with status: {result[0]}."
+
+        # Update the delivery address
+        cursor.execute("""
+        UPDATE orders 
+        SET delivery_address = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+        """, (new_address, order_id))
+        conn.commit()
+
+        logger.info(f"Delivery address updated successfully for order {order_id}.")
+        return f"Delivery address for order {order_id} has been updated successfully."
+
+    except Exception as e:
+        logger.error(f"Error updating delivery address for order {order_id}: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+@tool
+def cancel_order(order_id: int, reason: str) -> str:
+    """
+    Cancel an order and provide a cancellation reason.
+
+    Args:
+        order_id (int): The ID of the order.
+        reason (str): Reason for cancelling the order.
+
+    Returns:
+        str: Confirmation of the cancellation.
+    """
+    logger.info(f"Cancelling order {order_id}.")
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    try:
+        # Check if the order exists
+        cursor.execute("SELECT status FROM orders WHERE id = ?", (order_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            logger.warning(f"Order {order_id} not found.")
+            return f"No order found with ID {order_id}."
+
+        if result[0] in ("Shipped", "Delivered", "Cancelled"):
+            logger.warning(f"Cannot cancel order {order_id} with status: {result[0]}.")
+            return f"Cannot cancel order {order_id} with status: {result[0]}."
+
+        # Update the order status to "Cancelled" and record the reason
+        cursor.execute("""
+        UPDATE orders 
+        SET status = 'Cancelled', cancellation_reason = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+        """, (reason, order_id))
+        conn.commit()
+
+        logger.info(f"Order {order_id} cancelled successfully.")
+        return f"Order {order_id} has been cancelled successfully. Reason: {reason}"
+
+    except Exception as e:
+        logger.error(f"Error cancelling order {order_id}: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+@tool
+def get_recent_orders(user_id: int, days: int = 7) -> str:
+    """
+    Retrieve recent orders for a user within the specified number of days.
+
+    Args:
+        user_id (int): The ID of the user.
+        days (int): The number of days to look back. Default is 7 days.
+
+    Returns:
+        str: JSON-formatted list of recent orders.
+    """
+    logger.info(f"Retrieving recent orders for user {user_id} within the last {days} days.")
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    try:
+        # Query orders within the specified time frame
+        cursor.execute("""
+        SELECT id, total_amount, status, delivery_address, created_at, updated_at 
+        FROM orders 
+        WHERE user_id = ? AND created_at >= datetime('now', ? || ' days')
+        ORDER BY created_at DESC
+        """, (user_id, f"-{days}"))
+        orders = cursor.fetchall()
+
+        if not orders:
+            logger.info(f"No orders found for user {user_id} within the last {days} days.")
+            return f"No recent orders found for user {user_id} within the last {days} days."
+
+        # Build order list
+        recent_orders = [
+            {
+                "Order ID": order[0],
+                "Total Amount": f"${order[1]:.2f}",
+                "Status": order[2],
+                "Delivery Address": order[3],
+                "Created At": order[4],
+                "Updated At": order[5]
+            }
+            for order in orders
+        ]
+
+        logger.info(f"Found {len(recent_orders)} recent orders for user {user_id}.")
+        return json.dumps(recent_orders, indent=4)
+
+    except Exception as e:
+        logger.error(f"Error retrieving recent orders for user {user_id}: {e}")
         raise
     finally:
         conn.close()
