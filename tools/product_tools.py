@@ -9,7 +9,7 @@ import os
 from utils.logger import logger
 
 # 定义数据库路径
-db = os.path.join(os.path.dirname(__file__), "../data/database.db")
+db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
 @tool

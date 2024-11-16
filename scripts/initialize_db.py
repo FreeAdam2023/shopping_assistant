@@ -101,6 +101,7 @@ def create_database_and_tables():
         if connection:
             connection.close()
 
+
 def delete_database():
     """
     删除 SQLite 数据库文件。
@@ -119,6 +120,7 @@ def delete_database():
     except Exception as e:
         print(f"An error occurred while deleting the database: {e}")
 
+
 # 执行脚本
 if __name__ == "__main__":
-    create_database_and_tables()
+    delete_database()
