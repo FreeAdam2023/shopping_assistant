@@ -2,6 +2,7 @@
 @Time ： 2024-11-15
 @Auth ： Adam Lyu
 """
+import os
 import sqlite3
 import random
 import json
@@ -70,8 +71,13 @@ def generate_additional_specs(category, sub_category):
 # 插入数据
 def insert_sample_products():
     try:
-        # 连接到 SQLite 数据库
-        connection = sqlite3.connect("ecommerce.db")
+        # 确保 data 目录存在
+        data_dir = "../data"
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        # 设置数据库路径
+        db_path = os.path.join(data_dir, "ecommerce.db")
+        connection = sqlite3.connect(db_path)
         cursor = connection.cursor()
 
         # 插入 1000 个随机产品

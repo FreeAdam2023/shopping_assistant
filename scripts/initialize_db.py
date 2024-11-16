@@ -1,10 +1,16 @@
+import os
 import sqlite3
+
 
 def create_database_and_tables():
     try:
-        # 连接到 SQLite 数据库（如果文件不存在，将会自动创建）
-        connection = sqlite3.connect("ecommerce.db")
-
+        # 确保 data 目录存在
+        data_dir = "../data"
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        # 设置数据库路径
+        db_path = os.path.join(data_dir, "ecommerce.db")
+        connection = sqlite3.connect(db_path)
         # 创建游标对象
         cursor = connection.cursor()
 
@@ -83,6 +89,7 @@ def create_database_and_tables():
         # 关闭数据库连接
         if connection:
             connection.close()
+
 
 # 执行脚本
 if __name__ == "__main__":
