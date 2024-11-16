@@ -3,14 +3,22 @@ import sqlite3
 
 
 def create_database_and_tables():
+    """
+    创建 SQLite 数据库及相关表。如果文件不存在，将会自动创建。
+    数据库文件保存在 ../data 目录下。
+    """
     try:
         # 确保 data 目录存在
-        data_dir = "../data"
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
+
         # 设置数据库路径
         db_path = os.path.join(data_dir, "ecommerce.db")
+
+        # 打开 SQLite 数据库连接
         connection = sqlite3.connect(db_path)
+
         # 创建游标对象
         cursor = connection.cursor()
 
@@ -81,12 +89,13 @@ def create_database_and_tables():
         # 提交事务
         connection.commit()
 
-        print("Database and tables created successfully!")
+        print(f"Database and tables created successfully! Database path: {db_path}")
 
     except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred while creating database or tables: {e}")
+
     finally:
-        # 关闭数据库连接
+        # 确保关闭数据库连接
         if connection:
             connection.close()
 

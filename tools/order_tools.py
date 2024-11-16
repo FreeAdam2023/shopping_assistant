@@ -2,6 +2,8 @@
 @Time ： 2024-11-15
 @Auth ： Adam Lyu
 """
+import json
+
 from langchain_core.tools import tool
 import sqlite3
 import os
@@ -28,32 +30,67 @@ def checkout(user_id: int) -> str:
 
     try:
         # Retrieve cart contents
-        cursor.execute("SELECT product_id, quantity FROM cart WHERE user_id = ?", (user_id,))
+        cursor.execute("""
+        SELECT p.id, p.price, cp.quantity, p.stock 
+        FROM cart_products cp
+        JOIN products p ON cp.product_id = p.id
+        WHERE cp.cart_id = (
+            SELECT id FROM cart WHERE user_id = ?
+        )
+        """, (user_id,))
         cart_contents = cursor.fetchall()
 
         if not cart_contents:
             logger.warning("Cart is empty.")
             return "Your cart is empty. Please add items before checking out."
 
+        # Check stock availability
+        insufficient_stock = [
+            (product_id, quantity, stock)
+            for product_id, price, quantity, stock in cart_contents
+            if stock < quantity
+        ]
+        if insufficient_stock:
+            issues = "\n".join(
+                f"Product ID {product_id} only has {stock} in stock (requested {quantity})."
+                for product_id, quantity, stock in insufficient_stock
+            )
+            logger.warning(f"Insufficient stock for some items: {issues}")
+            return f"Checkout failed due to insufficient stock:\n{issues}"
+
+        # Calculate total amount
+        total_amount = sum(price * quantity for _, price, quantity, _ in cart_contents)
+
         # Create an order
-        cursor.execute("INSERT INTO orders (user_id, created_at) VALUES (?, datetime('now'))", (user_id,))
+        cursor.execute("""
+        INSERT INTO orders (user_id, total_amount, created_at) VALUES (?, ?, datetime('now'))
+        """, (user_id, total_amount))
         order_id = cursor.lastrowid
 
-        # Insert order details
-        for product_id, quantity in cart_contents:
-            cursor.execute(
-                "INSERT INTO order_details (order_id, product_id, quantity) VALUES (?, ?, ?)",
-                (order_id, product_id, quantity),
-            )
+        # Insert order products and update stock
+        for product_id, price, quantity, stock in cart_contents:
+            cursor.execute("""
+            INSERT INTO order_products (order_id, product_id, quantity, price) 
+            VALUES (?, ?, ?, ?)
+            """, (order_id, product_id, quantity, price))
+            cursor.execute("""
+            UPDATE products SET stock = stock - ? WHERE id = ?
+            """, (quantity, product_id))
 
         # Clear the cart
-        cursor.execute("DELETE FROM cart WHERE user_id = ?", (user_id,))
+        cursor.execute("""
+        DELETE FROM cart_products WHERE cart_id = (
+            SELECT id FROM cart WHERE user_id = ?
+        )
+        """, (user_id,))
         conn.commit()
 
         logger.info(f"Checkout complete for user {user_id}. Order ID: {order_id}.")
-        return f"Checkout successful! Your order ID is {order_id}."
+        return f"Checkout successful! Your order ID is {order_id}. Total amount: ${total_amount:.2f}."
+
     except Exception as e:
         logger.error(f"Error during checkout for user {user_id}: {e}")
+        conn.rollback()
         raise
     finally:
         conn.close()
@@ -62,29 +99,61 @@ def checkout(user_id: int) -> str:
 @tool
 def search_orders(order_id: int) -> str:
     """
-    Get the status of a specific order.
+    Get the details of a specific order.
 
     Args:
         order_id (int): The ID of the order.
 
     Returns:
-        str: The order status.
+        str: The order details.
     """
-    logger.info(f"Retrieving status for order {order_id}.")
+    logger.info(f"Retrieving details for order {order_id}.")
     conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT status FROM orders WHERE id = ?", (order_id,))
-        result = cursor.fetchone()
+        # Query order information
+        cursor.execute("""
+        SELECT o.id, o.user_id, o.total_amount, o.status, o.created_at, o.updated_at 
+        FROM orders o
+        WHERE o.id = ?
+        """, (order_id,))
+        order = cursor.fetchone()
 
-        if result:
-            return f"Your order status: {result[0]}."
-        else:
+        if not order:
             logger.warning(f"Order {order_id} not found.")
             return f"No order found with ID {order_id}."
+
+        # Build order details
+        order_details = {
+            "Order ID": order[0],
+            "User ID": order[1],
+            "Total Amount": f"${order[2]:.2f}",
+            "Status": order[3],
+            "Created At": order[4],
+            "Updated At": order[5],
+            "Products": []
+        }
+
+        # Query order products
+        cursor.execute("""
+        SELECT p.name, op.quantity, op.price 
+        FROM order_products op
+        JOIN products p ON op.product_id = p.id
+        WHERE op.order_id = ?
+        """, (order_id,))
+        products = cursor.fetchall()
+
+        order_details["Products"] = [
+            {"Name": name, "Quantity": quantity, "Price": f"${price:.2f}"}
+            for name, quantity, price in products
+        ]
+
+        logger.info(f"Order details retrieved successfully for order {order_id}.")
+        return json.dumps(order_details, indent=4)
+
     except Exception as e:
-        logger.error(f"Error retrieving order status for order {order_id}: {e}")
+        logger.error(f"Error retrieving order details for order {order_id}: {e}")
         raise
     finally:
         conn.close()

@@ -70,15 +70,27 @@ def generate_additional_specs(category, sub_category):
 
 # 插入数据
 def insert_sample_products():
+    """
+    插入随机生成的 1000 条产品数据到 SQLite 数据库。
+    """
     try:
         # 确保 data 目录存在
-        data_dir = "../data"
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
+
         # 设置数据库路径
         db_path = os.path.join(data_dir, "ecommerce.db")
+        print(f"Using database at: {db_path}")
+
+        # 打开数据库连接
         connection = sqlite3.connect(db_path)
         cursor = connection.cursor()
+
+        # 检查产品表是否存在
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
+        if not cursor.fetchone():
+            raise ValueError("Table 'products' does not exist. Please initialize the database first.")
 
         # 插入 1000 个随机产品
         products = []
@@ -107,10 +119,14 @@ def insert_sample_products():
         print(f"Successfully inserted {len(products)} diverse products into the database!")
 
     except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
+        print(f"Database error: {e}")
+
+    except ValueError as ve:
+        print(f"Initialization error: {ve}")
+
     finally:
         # 关闭数据库连接
-        if connection:
+        if 'connection' in locals():
             connection.close()
 
 # 执行脚本
