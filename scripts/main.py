@@ -10,8 +10,9 @@ from scripts.initialze_data_from_csv import insert_products_from_csv, extract_cs
 def setup_database():
     delete_database()
     create_database_and_tables()
-    csv_file_path = extract_csv_from_zip(
-        'marketing_sample_for_amazon_com-ecommerce__20200101_20200131__10k_data.csv.zip', '.')
+    # csv_file_path = extract_csv_from_zip(
+    #     'marketing_sample_for_amazon_com-ecommerce__20200101_20200131__10k_data.csv.zip', '.')
+    csv_file_path = 'marketing_sample_for_amazon_com-ecommerce__20200101_20200131__10k_data.csv'
     insert_products_from_csv(csv_file_path)
 
 

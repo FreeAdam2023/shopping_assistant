@@ -15,7 +15,7 @@ from state.state import State
 from pydantic import BaseModel, Field
 
 from tools.policy_tools import query_policy
-from tools.product_tools import search_and_recommend_products
+from tools.product_tools import search_and_recommend_products, list_categories
 from tools.order_tools import search_orders, checkout_order, update_delivery_address, cancel_order, get_recent_orders
 from tools.cart_tools import add_to_cart, view_cart, remove_from_cart
 
@@ -78,7 +78,8 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a product assistant specializing in helping users search for products, "
+            "You are a product assistant specializing in helping users search for products, provice categories options, "
+            "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
             " When searching, be persistent. Expand your query bounds if the first search returns no results. "
@@ -90,7 +91,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(time=datetime.now)
 
-product_safe_tools = [search_and_recommend_products,]
+product_safe_tools = [search_and_recommend_products, list_categories]
 product_sensitive_tools = []
 product_tools = product_safe_tools + product_sensitive_tools
 product_runnable = product_assistant_prompt | llm.bind_tools(

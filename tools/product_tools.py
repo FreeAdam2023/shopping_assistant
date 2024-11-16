@@ -11,6 +11,45 @@ from utils.logger import logger
 # 定义数据库路径
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
+@tool
+def list_categories() -> List[str]:
+    """
+    List all available product categories in the database.
+
+    Returns:
+        List[str]: A list of unique product categories.
+    """
+    logger.info("Starting list_categories tool.")
+
+    try:
+        # 打开数据库连接
+        conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # 查询所有类别
+        query = "SELECT DISTINCT category FROM products WHERE category IS NOT NULL"
+        logger.debug(f"Executing query: {query}")
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        # 提取类别名称
+        categories = [row[0] for row in results]
+        logger.info(f"Found {len(categories)} categories.")
+        return categories
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error: {e}")
+        return []
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return []
+
+    finally:
+        # 确保关闭连接
+        if 'conn' in locals():
+            conn.close()
+
 
 @tool
 def search_and_recommend_products(
