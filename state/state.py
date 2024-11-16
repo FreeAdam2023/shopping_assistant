@@ -6,15 +6,7 @@
 from typing import Annotated, Literal, Optional, List
 from typing_extensions import TypedDict
 from langgraph.graph.message import AnyMessage, add_messages
-import logging
-
-# 初始化日志记录器
-logger = logging.getLogger("StateLogger")
-logger.setLevel(logging.INFO)
-console_handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+from utils.logger import logger
 
 
 def update_dialog_stack(left: List[str], right: Optional[str]) -> List[str]:
@@ -44,12 +36,16 @@ def update_dialog_stack(left: List[str], right: Optional[str]) -> List[str]:
 
 
 class State(TypedDict):
-    """
-    Represents the state of the assistants's dialog and context.
-    """
-    messages: Annotated[List[AnyMessage], add_messages]
-    user_info: Optional[str]  # Optional user information
+    messages: Annotated[list[AnyMessage], add_messages]
+    user_info: str
     dialog_state: Annotated[
-        List[str],  # Support flexible states, not limited to predefined ones
+        list[
+            Literal[
+                "assistant",
+                "product",
+                "cart",
+                "order",
+            ]
+        ],
         update_dialog_stack,
     ]

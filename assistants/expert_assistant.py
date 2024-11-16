@@ -19,6 +19,10 @@ from tools.product_tools import search_and_recommend_products
 from tools.order_tools import search_orders, checkout_order, update_delivery_address, cancel_order, get_recent_orders
 from tools.cart_tools import add_to_cart, view_cart, remove_from_cart
 
+from dotenv import load_dotenv
+
+load_dotenv()  # 加载 .env 文件中的环境变量
+
 llm = ChatOpenAI(model="gpt-4-turbo", temperature=1, api_key=os.getenv('OPENAI_API_KEY'))  # gpt-4-turbo  gpt-3.5-turbo
 
 

@@ -16,7 +16,6 @@ from state.state import State
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import tools_condition
-# from tools.flight_tools import fetch_user_flight_information
 from utils.utilities import create_tool_node_with_fallback, create_entry_node
 
 builder = StateGraph(State)
