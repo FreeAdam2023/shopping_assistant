@@ -101,6 +101,23 @@ def create_database_and_tables():
         if connection:
             connection.close()
 
+def delete_database():
+    """
+    删除 SQLite 数据库文件。
+    """
+    try:
+        # 确保 data 目录存在
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
+        db_path = os.path.join(data_dir, "ecommerce.db")
+
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print(f"Database deleted successfully! Path: {db_path}")
+        else:
+            print(f"Database file does not exist at: {db_path}")
+
+    except Exception as e:
+        print(f"An error occurred while deleting the database: {e}")
 
 # 执行脚本
 if __name__ == "__main__":

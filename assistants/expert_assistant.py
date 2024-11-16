@@ -5,8 +5,8 @@
 import os
 from datetime import datetime
 
-from langchain.utilities.serpapi import SerpAPIWrapper
-# from langchain_community.tools.tavily_search import TavilySearchResults
+# from langchain.utilities.serpapi import SerpAPIWrapper
+from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_openai import ChatOpenAI
@@ -168,17 +168,9 @@ cart_runnable = cart_assistant_prompt | llm.bind_tools(
 # Primary Assistant
 class ToProductAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle flight updates and cancellations."""
-
-    request: str = Field(
-        description="handle product related tasks"
-    )
-
-
-class ToOrderAssistant(BaseModel):
-    """Transfers work to a specialized assistant to handle car rental bookings."""
-
-    start_date: str = Field(description="The start date of the car rental.")
-    end_date: str = Field(description="The end date of the car rental.")
+    name: str = Field(description="The name of the product.")
+    category: str = Field(description="The category of the product")
+    price_range: str = Field(description="The price_range of the product.")
     request: str = Field(
         description="Any additional information or requests from the user regarding the order"
     )
@@ -186,15 +178,36 @@ class ToOrderAssistant(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "start_date": "2023-07-01",
-                "end_date": "2023-07-05",
-                "request": "I need a compact car with automatic transmission.",
+                "name": "iPhone 15",
+                "category": "Electric",
+                "price_range": "2000 - 5000",
+                "request": "I need a new phone",
+            }
+        }
+
+
+class ToOrderAssistant(BaseModel):
+    """Transfers work to a specialized assistant to handle car rental bookings."""
+
+    new_address: str = Field(description="The new_address of the order.")
+
+    request: str = Field(
+        description="Any additional information or requests from the user regarding the order"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "new_address": "2023-07-01",
+                "request": "change to new address",
             }
         }
 
 
 class ToCartAssistant(BaseModel):
     """Transfer work to a specialized assistant to handle hotel bookings."""
+
+    product_id: int = Field(description="The id of the product which related to cart.")
 
     request: str = Field(
         description="Any additional information or requests from the user regarding the hotel booking."
@@ -203,6 +216,7 @@ class ToCartAssistant(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
+                "product_id": 1,
                 "request": "...",
             }
         }
@@ -231,7 +245,7 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 ).partial(time=datetime.now)
 
 primary_assistant_tools = [
-    SerpAPIWrapper,
+    TavilySearchResults(max_results=1, tavily_api_key=os.getenv('TAVILY_API_KEY')),
     query_policy,
 ]
 assistant_runnable = primary_assistant_prompt | llm.bind_tools(
