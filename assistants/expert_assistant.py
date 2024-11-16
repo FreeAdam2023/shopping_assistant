@@ -108,9 +108,11 @@ order_assistant_prompt = ChatPromptTemplate.from_messages(
             "Help users by providing detailed information about their orders based on their input. "
             "If the user provides an order ID, retrieve details about that order. "
             "If no order ID is provided, retrieve all orders for the given user. "
-            "For sensitive actions like checkout, confirm with the user before proceeding."
+            "For sensitive actions like checkout order, cancel order, change order address, "
+            "confirm with the user before proceeding."
             "\nCurrent time: {time}."
-            '\n\nIf the user needs help, and none of your tools are appropriate for it, then "CompleteOrEscalate" the dialog to the host assistant.'
+            '\n\nIf the user needs help, and none of your tools are appropriate for it, '
+            'then "CompleteOrEscalate" the dialog to the host assistant.'
             " Do not waste the user's time. Do not make up invalid tools or functions."
             "\n\nSome examples for which you should CompleteOrEscalate:\n"
             " - 'what's the weather like this time of year?'\n"
@@ -173,7 +175,7 @@ class ToProductAssistant(BaseModel):
     category: str = Field(description="The category of the product")
     price_range: str = Field(description="The price_range of the product.")
     request: str = Field(
-        description="Any additional information or requests from the user regarding the order"
+        description="Any additional information or requests from the user regarding the products"
     )
 
     class Config:
@@ -211,7 +213,7 @@ class ToCartAssistant(BaseModel):
     product_id: int = Field(description="The id of the product which related to cart.")
 
     request: str = Field(
-        description="Any additional information or requests from the user regarding the hotel booking."
+        description="Any additional information or requests from the user regarding the cart"
     )
 
     class Config:
@@ -227,14 +229,15 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a shopping assistant capable of handling product searches, "
-            "general knowledge queries, and policy queries. "
-            "Provide product recommendations based on user input, assist with general knowledge queries, "
+            "You are a shopping assistant handle general knowledge queries, and policy queries. "
             "and respond to queries about company policies such as shipping, return, and privacy policies."
-            "If a customer requests to update or cancel a order, add or remove product to cart, search specific products, "
-            "delegate the task to the appropriate specialized assistant by invoking the corresponding tool. You are not able to make these types of changes yourself."
+            "If a customer requests to checkout or update or cancel a order, add or remove product to cart, "
+            "need recommend some products, provide category options or search specific products, "
+            "delegate the task to the appropriate specialized assistant by invoking the corresponding tool. "
+            "You are not able to make these types of changes yourself."
             " Only the specialized assistants are given permission to do this for the user."
-            "The user is not aware of the different specialized assistants, so do not mention them; just quietly delegate through function calls. "
+            "The user is not aware of the different specialized assistants, so do not mention them; "
+            "just quietly delegate through function calls. "
             "Provide detailed information to the customer, and always double-check the database before concluding that information is unavailable. "
             " When searching, be persistent. Expand your query bounds if the first search returns no results. "
             " If a search comes up empty, expand your search before giving up."

@@ -4,8 +4,8 @@
 """
 import os
 import sqlite3
-import random
 import json
+import random
 
 # 定义更广泛的产品类别和属性
 categories = {
@@ -19,6 +19,7 @@ categories = {
     "Books": ["Novel", "Cookbook", "Biography", "Textbook"]
 }
 
+# 颜色和尺寸选项
 colors = ["Black", "White", "Red", "Blue", "Green", "Yellow", "None"]
 sizes = ["Small", "Medium", "Large", "XL", "One Size", "None"]
 
@@ -26,14 +27,14 @@ sizes = ["Small", "Medium", "Large", "XL", "One Size", "None"]
 def generate_additional_specs(category, sub_category):
     if category == "Electronics":
         return {
-            "Brand": random.choice(["BrandA", "BrandB", "BrandC"]),
+            "Brand": random.choice(["Apple", "Samsung", "Sony", "Dell", "HP"]),
             "Warranty": f"{random.randint(1, 3)} years",
-            "Feature": random.choice(["Bluetooth", "Noise Cancelling", "4K"])
+            "Feature": random.choice(["Bluetooth", "Noise Cancelling", "4K", "5G"])
         }
     elif category == "Home Appliances":
         return {
             "Energy Rating": f"{random.randint(1, 5)} stars",
-            "Brand": random.choice(["BrandX", "BrandY", "BrandZ"]),
+            "Brand": random.choice(["Dyson", "LG", "Panasonic", "Whirlpool"]),
             "Power": f"{random.randint(500, 2000)}W"
         }
     elif category == "Clothing":
@@ -43,17 +44,17 @@ def generate_additional_specs(category, sub_category):
         }
     elif category == "Food & Beverages":
         return {
-            "Brand": random.choice(["BrandF", "BrandG"]),
+            "Brand": random.choice(["Nestle", "Coca-Cola", "Pepsi", "Kraft"]),
             "Shelf Life": f"{random.randint(6, 24)} months"
         }
     elif category == "Toys":
         return {
             "Age Group": f"{random.randint(3, 12)}+ years",
-            "Material": random.choice(["Plastic", "Wood"])
+            "Material": random.choice(["Plastic", "Wood", "Metal"])
         }
     elif category == "Sports Equipment":
         return {
-            "Brand": random.choice(["BrandS1", "BrandS2"]),
+            "Brand": random.choice(["Adidas", "Nike", "Spalding", "Wilson"]),
             "Weight": f"{random.uniform(1, 10):.1f} kg"
         }
     elif category == "Furniture":
@@ -68,10 +69,10 @@ def generate_additional_specs(category, sub_category):
         }
     return {}
 
-# 插入数据
+# 插入产品数据
 def insert_sample_products():
     """
-    插入随机生成的 1000 条产品数据到 SQLite 数据库。
+    插入 200 条覆盖不同种类的产品数据到 SQLite 数据库。
     """
     try:
         # 确保 data 目录存在
@@ -92,18 +93,18 @@ def insert_sample_products():
         if not cursor.fetchone():
             raise ValueError("Table 'products' does not exist. Please initialize the database first.")
 
-        # 插入 1000 个随机产品
+        # 生成产品数据
         products = []
-        for _ in range(1000):
+        for _ in range(200):  # 创建 200 个产品
             category, sub_categories = random.choice(list(categories.items()))
             sub_category = random.choice(sub_categories)
             name = f"{sub_category} - {random.randint(1000, 9999)}"
-            description = f"A high-quality {sub_category} from the {category} category."
-            price = round(random.uniform(5, 5000), 2)
-            stock = random.randint(1, 500)
+            description = f"High-quality {sub_category} from the {category} category."
+            price = round(random.uniform(10, 2000), 2)
+            stock = random.choice([0, random.randint(1, 100)])
             color = random.choice(colors)
             size = random.choice(sizes)
-            additional_specs = json.dumps(generate_additional_specs(category, sub_category))
+            additional_specs = json.dumps(generate_additional_specs(category, sub_category), ensure_ascii=False)
 
             products.append((name, description, price, stock, category, color, size, additional_specs))
 
@@ -116,7 +117,7 @@ def insert_sample_products():
         # 提交事务
         connection.commit()
 
-        print(f"Successfully inserted {len(products)} diverse products into the database!")
+        print(f"Successfully inserted {len(products)} products into the database!")
 
     except sqlite3.Error as e:
         print(f"Database error: {e}")

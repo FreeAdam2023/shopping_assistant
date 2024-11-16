@@ -107,18 +107,11 @@ def create_entry_node(assistant_name: str, new_dialog_state: str) -> Callable:
         return {
             "messages": [
                 ToolMessage(
-                    content=(
-                        f"The assistant is now the {assistant_name}. Reflect on the above conversation "
-                        f"between the host assistant and the user. The user's intent is unsatisfied. "
-                        f"Use the provided tools to assist the user. Remember, you are {assistant_name}, "
-                        "capable of handling product searches and recommendations. Provide information such as product specifications, "
-                        "pricing, and availability. If relevant, recommend alternative or related products to the user. "
-                        "You can also manage the user's shopping cart, including adding or removing items and providing updates "
-                        "on the cart's contents. Additionally, handle queries about order checkout, delivery times, payment methods, "
-                        "and order statuses. The action is not complete until you have successfully invoked the appropriate tool. "
-                        "If the user changes their mind or requires assistance with another task, call the CompleteOrEscalate function "
-                        "to let the primary host assistant take control. Do not mention who you are—just act as the proxy for the assistant."
-                    ),
+                    content=f"The assistant is now the {assistant_name}. Reflect on the above conversation between the host assistant and the user."
+                    f" The user's intent is unsatisfied. Use the provided tools to assist the user. Remember, you are {assistant_name},"
+                    " and the add, update, other action is not complete until after you have successfully invoked the appropriate tool."
+                    " If the user changes their mind or needs help for other tasks, call the CompleteOrEscalate function to let the primary host assistant take control."
+                    " Do not mention who you are - just act as the proxy for the assistant.",
                     tool_call_id=tool_call_id,
                 )
             ],

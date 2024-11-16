@@ -45,7 +45,7 @@ class State(TypedDict):
     dialog_state: Annotated[
         list[
             Literal[
-                "assistant",
+                "primary_assistant",
                 "product",
                 "cart",
                 "order",
