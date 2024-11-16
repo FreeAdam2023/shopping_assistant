@@ -20,19 +20,20 @@ def update_dialog_stack(left: List[str], right: Optional[str]) -> List[str]:
     Returns:
         List[str]: Updated state stack.
     """
-    logger.info("Current stack (left): %s", left)
-    logger.info("Operation (right): %s", right)
+    logger.info("Current stack (left): %s", ", ".join(left) if left else "Empty stack")
+    logger.info("Operation (right): %s", right or "No operation")
 
     # Perform stack operations
     if right is None:
-        logger.info("Updated stack: %s", left)
+        logger.info("Stack unchanged: %s", ", ".join(left) if left else "Empty stack")
         return left
     if right == "pop":
-        logger.info("Updated stack: %s", left[:-1])
+        logger.info("Stack after pop: %s", ", ".join(left[:-1]) if left[:-1] else "Empty stack")
         return left[:-1]
     updated_stack = left + [right]
-    logger.info("Updated stack: %s", updated_stack)
+    logger.info("Stack after push: %s", ", ".join(updated_stack))
     return updated_stack
+
 
 
 class State(TypedDict):

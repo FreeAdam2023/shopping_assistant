@@ -7,8 +7,8 @@ import uuid
 from scripts.main import setup_database
 from langchain_core.messages import ToolMessage
 from utils.logger import logger
-from state.graph import part_graph
 from utils.utilities import _print_event
+from state.graph import part_graph
 
 # Update with the backup file so we can restart from the original place in each section
 setup_database()
@@ -24,8 +24,14 @@ config = {
     }
 }
 
+# "有哪些类别产品我可以选择？"
+# "我喜欢电子产品"
+# "我想看下最新的手机产品"
+# "Apple iPhone 15 Pro Max"
+# "帮我把这个产品添加到购物车"
 
 if __name__ == "__main__":
+    _printed = set()
     while True:
         question = input("input question please\n\n")
         events = part_graph.stream(
