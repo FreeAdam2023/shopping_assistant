@@ -51,12 +51,9 @@ for key, config in ASSISTANT_CONFIGS.items():
         create_entry_node(config["entry_name"], key),
     )
 
-    # 检查并实例化助手类
-    assistant_instance = config["assistant_class"]()
+    assistant_instance = config["assistant_class"]
     if not callable(assistant_instance):
-        raise TypeError(
-            f"Expected {config['assistant_class']} to return a callable, but got {type(assistant_instance)}"
-        )
+        assistant_instance = RunnableFunction(assistant_instance)
 
     # 添加助手节点
     builder.add_node(config["node_name"], assistant_instance)
@@ -69,6 +66,7 @@ for key, config in ASSISTANT_CONFIGS.items():
             tools_node = create_tool_node_with_fallback(config[tool_type])
             builder.add_node(node_name, tools_node)
             builder.add_edge(config["node_name"], node_name)
+
 
     # 定义动态路由逻辑
     def route(state: State, key=key):

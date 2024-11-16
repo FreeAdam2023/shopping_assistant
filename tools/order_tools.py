@@ -60,7 +60,7 @@ def checkout(user_id: int) -> str:
 
 
 @tool
-def get_order_status(order_id: int) -> str:
+def search_orders(order_id: int) -> str:
     """
     Get the status of a specific order.
 
