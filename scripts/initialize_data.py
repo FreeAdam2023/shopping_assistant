@@ -119,6 +119,21 @@ def insert_sample_products():
 
         print(f"Successfully inserted {len(products)} products into the database!")
 
+        # 插入 2 条库存为 0 的产品
+        zero_stock_products = [
+            ("Test Product 1", "This is a test product with zero stock.", 99.99, 0, "Test Category", "Red", "Large", "{}"),
+            ("Test Product 2", "This is another test product with zero stock.", 49.99, 0, "Test Category", "Blue", "Medium", "{}")
+        ]
+        cursor.executemany("""
+        INSERT INTO products (name, description, price, stock, category, color, size, additional_specs)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, zero_stock_products)
+
+        print(f"Inserted {len(zero_stock_products)} products with zero stock.")
+
+        # 提交事务
+        connection.commit()
+
     except sqlite3.Error as e:
         print(f"Database error: {e}")
 

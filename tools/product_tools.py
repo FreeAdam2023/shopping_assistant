@@ -150,6 +150,160 @@ def search_and_recommend_products(
             conn.close()
 
 
+def update_stock_on_order(order_id: int, conn=None):
+    """
+    Update product stock when an order is activated or completed.
+
+    Args:
+        order_id (int): The ID of the order.
+        conn: SQLite database connection.
+    """
+    logger.info(f"Updating stock for order {order_id}.")
+
+    try:
+        # 打开数据库连接
+        if not conn:
+            conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # 查询订单中产品及其数量
+        query = """
+        SELECT product_id, quantity 
+        FROM order_products
+        WHERE order_id = ?
+        """
+        cursor.execute(query, (order_id,))
+        products = cursor.fetchall()
+
+        # 更新库存
+        for product_id, quantity in products:
+            cursor.execute("""
+            UPDATE products
+            SET stock = stock - ?
+            WHERE id = ?
+            AND stock >= ?
+            """, (quantity, product_id, quantity))
+
+            if cursor.rowcount == 0:
+                logger.warning(f"Product {product_id} has insufficient stock for order {order_id}.")
+
+        # 提交更改
+        conn.commit()
+        logger.info(f"Stock updated successfully for order {order_id}.")
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error while updating stock for order {order_id}: {e}")
+        conn.rollback()
+
+    except Exception as e:
+        logger.error(f"Unexpected error while updating stock for order {order_id}: {e}")
+        conn.rollback()
+
+    finally:
+        if not conn:
+            conn.close()
+
+
+def update_stock_on_cancellation(order_id: int, conn=None):
+    """
+    Restore product stock when an order is cancelled.
+
+    Args:
+        order_id (int): The ID of the cancelled order.
+        conn: SQLite database connection.
+    """
+    logger.info(f"Restoring stock for cancelled order {order_id}.")
+
+    try:
+        # 打开数据库连接
+        if not conn:
+            conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # 查询订单中产品及其数量
+        query = """
+        SELECT product_id, quantity 
+        FROM order_products
+        WHERE order_id = ?
+        """
+        cursor.execute(query, (order_id,))
+        products = cursor.fetchall()
+
+        # 恢复库存
+        for product_id, quantity in products:
+            cursor.execute("""
+            UPDATE products
+            SET stock = stock + ?
+            WHERE id = ?
+            """, (quantity, product_id))
+
+        # 提交更改
+        conn.commit()
+        logger.info(f"Stock restored successfully for cancelled order {order_id}.")
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error while restoring stock for order {order_id}: {e}")
+        conn.rollback()
+
+    except Exception as e:
+        logger.error(f"Unexpected error while restoring stock for order {order_id}: {e}")
+        conn.rollback()
+
+    finally:
+        if not conn:
+            conn.close()
+
+
+def check_product_stock(product_id: int, conn=None) -> Optional[Dict]:
+    """
+    Check the stock information of a specific product.
+
+    Args:
+        product_id (int): The ID of the product to check.
+        conn: SQLite database connection.
+
+    Returns:
+        Optional[Dict]: A dictionary containing product stock information or None if not found.
+    """
+    logger.info(f"Checking stock for product {product_id}.")
+
+    try:
+        # 打开数据库连接
+        if not conn:
+            conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # 查询产品库存信息
+        query = """
+        SELECT id, name, category, stock
+        FROM products
+        WHERE id = ?
+        """
+        cursor.execute(query, (product_id,))
+        result = cursor.fetchone()
+
+        if result:
+            # 返回库存信息
+            product_stock_info = dict(zip([column[0] for column in cursor.description], result))
+            logger.info(f"Found stock information for product {product_id}: {product_stock_info}")
+            return product_stock_info
+        else:
+            logger.warning(f"No stock information found for product {product_id}.")
+            return None
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error while checking stock for product {product_id}: {e}")
+        return None
+
+    except Exception as e:
+        logger.error(f"Unexpected error while checking stock for product {product_id}: {e}")
+        return None
+
+    finally:
+        if not conn:
+            conn.close()
+
+
 @tool
 def list_categories_tool() -> List[str]:
     """
@@ -176,3 +330,42 @@ def search_and_recommend_products_tool(name: Optional[str] = None, category: Opt
             Dict[str, List[Dict]]: A dictionary with search results and recommendations.
         """
     return search_and_recommend_products(name, category, price_range)
+
+
+@tool
+def update_stock_on_cancellation_tool(order_id: int, conn=None):
+    """
+    Restore product stock when an order is cancelled.
+
+    Args:
+        order_id (int): The ID of the cancelled order.
+        conn: SQLite database connection.
+    """
+    return update_stock_on_cancellation(order_id, conn)
+
+
+@tool
+def update_stock_on_order_tool(order_id: int, conn=None):
+    """
+    Update product stock when an order is activated or completed.
+
+    Args:
+        order_id (int): The ID of the order.
+        conn: SQLite database connection.
+    """
+    return update_stock_on_order(order_id, conn)
+
+
+@tool
+def check_product_stock_tool(product_id: int, conn=None) -> Optional[Dict]:
+    """
+    Check the stock information of a specific product.
+
+    Args:
+        product_id (int): The ID of the product to check.
+        conn: SQLite database connection.
+
+    Returns:
+        Optional[Dict]: A dictionary containing product stock information or None if not found.
+    """
+    return check_product_stock(product_id, conn)

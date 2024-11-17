@@ -15,7 +15,8 @@ from state.state import State
 from pydantic import BaseModel, Field
 
 from tools.policy_tools import query_policy_tool, query_payment_methods_tool
-from tools.product_tools import search_and_recommend_products_tool, list_categories_tool
+from tools.product_tools import search_and_recommend_products_tool, list_categories_tool, \
+    update_stock_on_cancellation_tool, update_stock_on_order_tool, check_product_stock_tool
 from tools.order_tools import (search_orders_tool, checkout_order_tool, update_delivery_address_tool, cancel_order_tool,
                                get_recent_orders_tool)
 from tools.cart_tools import add_to_cart_tool, view_cart_tool, remove_from_cart_tool
@@ -79,10 +80,12 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a product assistant specializing in helping users search for products, provice categories options, "
+            "You are a product assistant specializing in helping users search for products, provice categories options, check product sotck info "
             "If the user does not provide a specific query but asks about product categories, always call `list_categories_tool`."
             " When searching, be persistent. Expand your query bounds if the first search returns no results. "
             "for example if using category could not find product then using name to try find one "
+            "If the product the user wants to buy is not available, we will tell the user that it is not available. "
+            "You can modify the stock data when the user places an order, restores the order, or cancels the order."
             "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
@@ -95,8 +98,8 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(time=datetime.now)
 
-product_safe_tools = [search_and_recommend_products_tool, list_categories_tool]
-product_sensitive_tools = []
+product_safe_tools = [search_and_recommend_products_tool, list_categories_tool, check_product_stock_tool]
+product_sensitive_tools = [update_stock_on_cancellation_tool, update_stock_on_order_tool]
 product_tools = product_safe_tools + product_sensitive_tools
 product_runnable = product_assistant_prompt | llm.bind_tools(
     product_tools + [CompleteOrEscalate]
@@ -152,6 +155,9 @@ order_assistant_prompt = ChatPromptTemplate.from_messages(
             "If the user provides an order ID, retrieve details about that order. "
             "If no order ID is provided, retrieve all orders for the given user. "
             "If the user says 'calculate the cost,' 'I want to place an order,' or 'check out,' call the checkout tool."
+            "Please check the stock when placing an order"
+            "Pay attention to confirm the user’s payment method"
+            "When the user queries the delivery time, the user's estimated delivery time is given based on the logistics policy and the current time."
             "For sensitive actions like checkout order, cancel order, change order address, "
             "if There is no special description. The default operation is the latest order."
             "confirm with the user before proceeding."
@@ -225,6 +231,7 @@ class ToOrderAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle car rental bookings."""
 
     new_address: str = Field(description="The new_address of the order.")
+    payment_method: str = Field(description="The payment method of the order.")
 
     request: str = Field(
         description="Any additional information or requests from the user regarding the order"
@@ -245,11 +252,14 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
             "You are a shopping assistant handling general queries about shopping, company policies, and products. "
             "payment_methods query"
             "You can delegate specific tasks to specialized assistants for managing orders, carts, or product queries. "
+            "When adding products to the shopping cart, you need to check the inventory first. "
+            "You need two assistants to complete the task. First, the product assistant checks the inventory. "
+            "If there is inventory, use the shopping cart assistant to add the product to the shopping cart."
             "For example:\n"
-            "- If the query involves adding or removing products to/from the cart or viewing the cart, "
-            "delegate the task to the `ToCartAssistant`.\n"
-            "- If the query involves searching for products or viewing product categories, "
+            "- If the query involves searching for products or viewing product categories, check stock of product"
             "delegate the task to the `ToProductAssistant`.\n"
+            "- If the query involves adding or removing products to/from the cart or viewing the cart, for example I want this product "
+            "delegate the task to the `ToCartAssistant`.\n"
             "- If the query involves managing orders (e.g., checking orders, updating delivery addresses, canceling orders), "
             "delegate the task to the `ToOrderAssistant`.\n"
             "\nAlways double-check the database before concluding that information is unavailable. "
@@ -266,6 +276,7 @@ primary_assistant_tools = [
     TavilySearchResults(max_results=1, tavily_api_key=os.getenv('TAVILY_API_KEY')),
     query_policy_tool,
     query_payment_methods_tool,
+
 ]
 assistant_runnable = primary_assistant_prompt | llm.bind_tools(
     primary_assistant_tools

@@ -323,18 +323,19 @@ def get_recent_orders(user_id: int, days: int = 7, conn=None) -> str:
 
 
 @tool
-def checkout_order_tool(user_id: int, address: str) -> str:
+def checkout_order_tool(user_id: int, address: str, payment_method: str, conn=None) -> str:
     """
     Proceed to checkout for the user's cart with a delivery address.
 
     Args:
         user_id (int): The ID of the user.
         address (str): The delivery address for the order.
+        payment_method (str): The selected payment method for the order.
         conn
     Returns:
         str: Confirmation of the checkout process.
     """
-    return checkout_order(user_id, address)
+    return checkout_order(user_id, address, payment_method)
 
 
 @tool
