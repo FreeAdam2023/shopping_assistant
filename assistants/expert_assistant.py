@@ -173,21 +173,21 @@ cart_runnable = cart_assistant_prompt | llm.bind_tools(
 
 # Primary Assistant
 class ToProductAssistant(BaseModel):
-    """Transfers work to a specialized assistant to handle flight updates and cancellations."""
-    name: str = Field(description="The name of the product.")
-    category: str = Field(description="The category of the product")
-    price_range: str = Field(description="The price_range of the product.")
+    """Transfers work to a specialized assistant to handle product-related queries."""
+    name: str = Field(description="The name of the product. Optional, can be empty.")
+    category: str = Field(description="The category of the product. Optional, can be empty.")
+    price_range: str = Field(description="The price range of the product. Optional, can be empty.")
     request: str = Field(
-        description="Any additional information or requests from the user regarding the products"
+        description="Any additional information or requests from the user regarding products or categories"
     )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "name": "iPhone 15",
-                "category": "Electric",
-                "price_range": "2000 - 5000",
-                "request": "I need a new phone",
+                "name": "",
+                "category": "",
+                "price_range": "",
+                "request": "Show me the product categories available.",
             }
         }
 
@@ -234,18 +234,18 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a shopping assistant handle general knowledge queries, and policy queries. "
-            "and respond to queries about company policies such as shipping, return, and privacy policies."
-            "If a customer requests to checkout or update or cancel a order, add or remove product to cart, "
-            "need recommend some products, provide category options or search specific products, "
-            "delegate the task to the appropriate specialized assistant by invoking the corresponding tool. "
-            "You are not able to make these types of changes yourself."
-            " Only the specialized assistants are given permission to do this for the user."
-            "The user is not aware of the different specialized assistants, so do not mention them; "
-            "just quietly delegate through function calls. "
-            "Provide detailed information to the customer, and always double-check the database before concluding that information is unavailable. "
-            " When searching, be persistent. Expand your query bounds if the first search returns no results. "
-            " If a search comes up empty, expand your search before giving up."
+            "You are a shopping assistant handling general queries about shopping, company policies, and products. "
+            "You can delegate specific tasks to specialized assistants for managing orders, carts, or product queries. "
+            "For example:\n"
+            "- If the query involves adding or removing products to/from the cart or viewing the cart, "
+            "delegate the task to the `ToCartAssistant`.\n"
+            "- If the query involves searching for products or viewing product categories, "
+            "delegate the task to the `ToProductAssistant`.\n"
+            "- If the query involves managing orders (e.g., checking orders, updating delivery addresses, canceling orders), "
+            "delegate the task to the `ToOrderAssistant`.\n"
+            "\nAlways double-check the database before concluding that information is unavailable. "
+            "Do not make up invalid categories, product names, or order details. "
+            "Provide clear instructions to specialized assistants and ensure seamless task completion.\n"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}.",
         ),

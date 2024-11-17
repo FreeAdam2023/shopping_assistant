@@ -7,7 +7,6 @@ from typing import Literal
 from langchain_core.tools import tool
 
 
-@tool
 def query_policy(policy_type: Literal["shipping", "return", "privacy"]) -> str:
     """
     A tool for fetching the content of company policies.
@@ -27,3 +26,17 @@ def query_policy(policy_type: Literal["shipping", "return", "privacy"]) -> str:
 
     # 返回政策内容
     return policies.get(policy_type, "Policy not found.")
+
+
+@tool
+def query_policy_tool(policy_type: Literal["shipping", "return", "privacy"]) -> str:
+    """
+    A tool for fetching the content of company policies.
+
+    Args:
+        policy_type (Literal): The type of policy to query. Options are 'shipping', 'return', or 'privacy'.
+
+    Returns:
+        str: The content of the requested policy.
+    """
+    return query_policy(policy_type)

@@ -12,7 +12,6 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-@tool
 def view_cart(user_id: int) -> List[Dict]:
     """
     View the contents of the user's shopping cart.
@@ -46,7 +45,6 @@ def view_cart(user_id: int) -> List[Dict]:
         conn.close()
 
 
-@tool
 def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
     """
     Add a product to the user's shopping cart.
@@ -94,7 +92,6 @@ def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
         conn.close()
 
 
-@tool
 def remove_from_cart(user_id: int, product_id: int) -> str:
     """
     Remove a product from the user's shopping cart.
@@ -135,9 +132,57 @@ def remove_from_cart(user_id: int, product_id: int) -> str:
     finally:
         conn.close()
 
+@tool
+def view_cart_tool(user_id: int) -> List[Dict]:
+    """
+    Retrieve the contents of a user's shopping cart.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        List[Dict]: A list of products in the user's cart with their details.
+    """
+    return view_cart(user_id)
+
+
+@tool
+def add_to_cart_tool(user_id: int, product_id: int, quantity: int = 1) -> str:
+    """
+    Add a product to a user's shopping cart.
+
+    Args:
+        user_id (int): The ID of the user.
+        product_id (int): The ID of the product to add.
+        quantity (int): The quantity of the product to add. Default is 1.
+
+    Returns:
+        str: A confirmation message indicating success or failure.
+    """
+    return add_to_cart(user_id, product_id, quantity)
+
+
+@tool
+def remove_from_cart_tool(user_id: int, product_id: int) -> str:
+    """
+    Remove a product from a user's shopping cart.
+
+    Args:
+        user_id (int): The ID of the user.
+        product_id (int): The ID of the product to remove.
+
+    Returns:
+        str: A confirmation message indicating success or failure.
+    """
+    return remove_from_cart(user_id, product_id)
+
+
 
 if __name__ == "__main__":
     # 测试代码
+    # user_id: 1
+    # product_id: 160
+    # quantity: 1
     try:
         print(view_cart(user_id=1))
         print(add_to_cart(user_id=1, product_id=101, quantity=2))

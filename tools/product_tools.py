@@ -11,7 +11,7 @@ from utils.logger import logger
 # 定义数据库路径
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
-@tool
+
 def list_categories() -> List[str]:
     """
     List all available product categories in the database.
@@ -51,11 +51,10 @@ def list_categories() -> List[str]:
             conn.close()
 
 
-@tool
 def search_and_recommend_products(
-    name: Optional[str] = None,
-    category: Optional[str] = None,
-    price_range: Optional[str] = None,
+        name: Optional[str] = None,
+        category: Optional[str] = None,
+        price_range: Optional[str] = None,
 ) -> Dict[str, List[Dict]]:
     """
     Search for products based on name, category, and price range, and recommend related products.
@@ -130,7 +129,8 @@ def search_and_recommend_products(
             dict(zip([column[0] for column in cursor.description], row)) for row in recommendations_results
         ]
 
-        logger.info(f"search_and_recommend_products found {len(products)} search results and {len(recommendations)} recommendations.")
+        logger.info(
+            f"search_and_recommend_products found {len(products)} search results and {len(recommendations)} recommendations.")
         return {"search_results": products, "recommendations": recommendations}
 
     except sqlite3.Error as e:
@@ -145,3 +145,31 @@ def search_and_recommend_products(
         # 确保关闭连接
         if 'conn' in locals():
             conn.close()
+
+
+@tool
+def list_categories_tool() -> List[str]:
+    """
+    List all available product categories in the database.
+
+    Returns:
+        List[str]: A list of unique product categories.
+    """
+    return list_categories()
+
+
+@tool
+def search_and_recommend_products_tool(name: Optional[str] = None, category: Optional[str] = None,
+                                       price_range: Optional[str] = None) -> Dict[str, List[Dict]]:
+    """
+        Search for products based on name, category, and price range, and recommend related products.
+
+        Args:
+            name (str): The product name or partial name to search for.
+            category (str): The category to filter products by.
+            price_range (str): A price range in the format "min-max".
+
+        Returns:
+            Dict[str, List[Dict]]: A dictionary with search results and recommendations.
+        """
+    return search_and_recommend_products(name, category, price_range)

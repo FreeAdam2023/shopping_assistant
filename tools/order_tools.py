@@ -16,7 +16,6 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-@tool
 def checkout_order(user_id: int) -> str:
     """
     Proceed to checkout for the user's cart.
@@ -99,7 +98,6 @@ def checkout_order(user_id: int) -> str:
         conn.close()
 
 
-@tool
 def search_orders(order_id: int) -> str:
     """
     Get the details of a specific order.
@@ -129,7 +127,8 @@ def search_orders(order_id: int) -> str:
 
         # Build order details
         order_details = dict(zip(
-            ["Order ID", "User ID", "Total Amount", "Status", "Delivery Address", "Cancellation Reason", "Created At", "Updated At"],
+            ["Order ID", "User ID", "Total Amount", "Status", "Delivery Address", "Cancellation Reason", "Created At",
+             "Updated At"],
             order
         ))
 
@@ -157,7 +156,6 @@ def search_orders(order_id: int) -> str:
         conn.close()
 
 
-@tool
 def update_delivery_address(order_id: int, new_address: str) -> str:
     """
     Update the delivery address of an order.
@@ -204,7 +202,6 @@ def update_delivery_address(order_id: int, new_address: str) -> str:
         conn.close()
 
 
-@tool
 def cancel_order(order_id: int, reason: str) -> str:
     """
     Cancel an order and provide a cancellation reason.
@@ -251,7 +248,6 @@ def cancel_order(order_id: int, reason: str) -> str:
         conn.close()
 
 
-@tool
 def get_recent_orders(user_id: int, days: int = 7) -> str:
     """
     Retrieve recent orders for a user within the specified number of days.
@@ -302,3 +298,76 @@ def get_recent_orders(user_id: int, days: int = 7) -> str:
         raise
     finally:
         conn.close()
+
+
+@tool
+def checkout_order_tool(user_id: int) -> str:
+    """
+    Proceed to checkout for the user's cart.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        str: Confirmation of the checkout process.
+    """
+    return checkout_order(user_id)
+
+
+@tool
+def search_orders_tool(order_id: int) -> str:
+    """
+    Get the details of a specific order.
+
+    Args:
+        order_id (int): The ID of the order.
+
+    Returns:
+        str: The order details.
+    """
+    return search_orders(order_id)
+
+
+@tool
+def update_delivery_address_tool(order_id: int, new_address: str) -> str:
+    """
+    Update the delivery address of an order.
+
+    Args:
+        order_id (int): The ID of the order.
+        new_address (str): The new delivery address.
+
+    Returns:
+        str: Confirmation of the update.
+    """
+    return update_delivery_address(order_id, new_address)
+
+
+@tool
+def cancel_order_tool(order_id: int, reason: str) -> str:
+    """
+    Cancel an order and provide a cancellation reason.
+
+    Args:
+        order_id (int): The ID of the order.
+        reason (str): Reason for cancelling the order.
+
+    Returns:
+        str: Confirmation of the cancellation.
+    """
+    return cancel_order(order_id, reason)
+
+
+@tool
+def get_recent_orders_tool(user_id: int, days: int = 7) -> str:
+    """
+    Retrieve recent orders for a user within the specified number of days.
+
+    Args:
+        user_id (int): The ID of the user.
+        days (int): The number of days to look back. Default is 7 days.
+
+    Returns:
+        str: JSON-formatted list of recent orders.
+    """
+    return get_recent_orders(user_id, days)
