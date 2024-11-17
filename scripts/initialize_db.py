@@ -57,8 +57,6 @@ def create_database_and_tables():
             cart_id INTEGER NOT NULL,
             product_id INTEGER NOT NULL,
             quantity INTEGER NOT NULL,
-            FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         )
         """)
 
@@ -84,8 +82,6 @@ def create_database_and_tables():
             product_id INTEGER NOT NULL,
             quantity INTEGER NOT NULL,
             price REAL NOT NULL, -- 记录购买时的单价
-            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         )
         """)
 

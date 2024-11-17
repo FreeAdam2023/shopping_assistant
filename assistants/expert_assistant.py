@@ -111,6 +111,7 @@ order_assistant_prompt = ChatPromptTemplate.from_messages(
             "If no order ID is provided, retrieve all orders for the given user. "
             "For sensitive actions like checkout order, cancel order, change order address, "
             "confirm with the user before proceeding."
+            "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
             '\n\nIf the user needs help, and none of your tools are appropriate for it, '
             'then "CompleteOrEscalate" the dialog to the host assistant.'
@@ -144,6 +145,7 @@ cart_assistant_prompt = ChatPromptTemplate.from_messages(
             " When searching, be persistent. Expand your query bounds if the first search returns no results. "
             "If you need more information or the customer changes their mind, escalate the task back to the main assistant."
             " Remember that a task isn't completed until after the relevant tool has successfully been used."
+            "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
             "\n\nIf the user needs help, and none of your tools are appropriate for it, then "
             '"CompleteOrEscalate" the dialog to the host assistant. Do not waste the user\'s time. Do not make up invalid tools or functions.'
