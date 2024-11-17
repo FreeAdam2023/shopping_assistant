@@ -14,10 +14,11 @@ from langchain_openai import ChatOpenAI
 from state.state import State
 from pydantic import BaseModel, Field
 
-from tools.policy_tools import query_policy
-from tools.product_tools import search_and_recommend_products, list_categories
-from tools.order_tools import search_orders, checkout_order, update_delivery_address, cancel_order, get_recent_orders
-from tools.cart_tools import add_to_cart, view_cart, remove_from_cart
+from tools.policy_tools import query_policy_tool
+from tools.product_tools import search_and_recommend_products_tool, list_categories_tool
+from tools.order_tools import (search_orders_tool, checkout_order_tool, update_delivery_address_tool, cancel_order_tool,
+                               get_recent_orders_tool)
+from tools.cart_tools import add_to_cart_tool, view_cart_tool, remove_from_cart_tool
 
 from dotenv import load_dotenv
 
@@ -79,7 +80,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             "You are a product assistant specializing in helping users search for products, provice categories options, "
-            "If the user does not provide a specific query but asks about product categories, always call `list_categories`."
+            "If the user does not provide a specific query but asks about product categories, always call `list_categories_tool`."
             "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
@@ -92,7 +93,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(time=datetime.now)
 
-product_safe_tools = [search_and_recommend_products, list_categories]
+product_safe_tools = [search_and_recommend_products_tool, list_categories_tool]
 product_sensitive_tools = []
 product_tools = product_safe_tools + product_sensitive_tools
 product_runnable = product_assistant_prompt | llm.bind_tools(
@@ -126,8 +127,8 @@ order_assistant_prompt = ChatPromptTemplate.from_messages(
 
 ).partial(time=datetime.now)
 
-order_safe_tools = [search_orders, get_recent_orders]
-order_sensitive_tools = [checkout_order, update_delivery_address, cancel_order]
+order_safe_tools = [search_orders_tool, get_recent_orders_tool]
+order_sensitive_tools = [checkout_order_tool, update_delivery_address_tool, cancel_order_tool]
 order_tools = order_safe_tools + order_sensitive_tools
 order_runnable = order_assistant_prompt | llm.bind_tools(
     order_tools + [CompleteOrEscalate]
@@ -160,10 +161,10 @@ cart_assistant_prompt = ChatPromptTemplate.from_messages(
     ]
 ).partial(time=datetime.now)
 
-cart_safe_tools = [view_cart]
+cart_safe_tools = [view_cart_tool]
 cart_sensitive_tools = [
-    add_to_cart,
-    remove_from_cart,
+    add_to_cart_tool,
+    remove_from_cart_tool,
 ]
 cart_tools = cart_safe_tools + cart_sensitive_tools
 cart_runnable = cart_assistant_prompt | llm.bind_tools(
@@ -255,7 +256,7 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 
 primary_assistant_tools = [
     TavilySearchResults(max_results=1, tavily_api_key=os.getenv('TAVILY_API_KEY')),
-    query_policy,
+    query_policy_tool,
 ]
 assistant_runnable = primary_assistant_prompt | llm.bind_tools(
     primary_assistant_tools
