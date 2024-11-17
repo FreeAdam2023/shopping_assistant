@@ -22,7 +22,7 @@ builder = StateGraph(State)
 
 
 def user_info(state: State):
-    return {"user_info": {"gender": 'Female', "age": 25, "name": 'Annie'}}
+    return {"user_info": {"user_id": 1,  "gender": 'Female', "age": 25, "name": 'Annie'}}
 
 
 builder.add_node("fetch_user_info", user_info)
@@ -82,7 +82,8 @@ def pop_dialog_state(state: State) -> dict:
         # Note: Doesn't currently handle the edge case where the llm performs parallel tool calls
         messages.append(
             ToolMessage(
-                content="Resuming dialog with the host assistant. Please reflect on the past conversation and assist the user as needed.",
+                content="Resuming dialog with the host assistant. "
+                        "Please reflect on the past conversation and assist the user as needed.",
                 tool_call_id=state["messages"][-1].tool_calls[0]["id"],
             )
         )
@@ -123,7 +124,7 @@ def route_cart(
     did_cancel = any(tc["name"] == CompleteOrEscalate.__name__ for tc in tool_calls)
     if did_cancel:
         return "leave_skill"
-    safe_toolnames = [t.name for t in cart_sensitive_tools]
+    safe_toolnames = [t.name for t in cart_safe_tools]
     if all(tc["name"] in safe_toolnames for tc in tool_calls):
         return "cart_safe_tools"
     return "cart_sensitive_tools"
@@ -144,7 +145,7 @@ builder.add_conditional_edges(
 
 # Order assistant
 builder.add_node(
-    "enter_order", create_entry_node("order Assistant", "order")
+    "enter_order", create_entry_node("Order Assistant", "order")
 )
 builder.add_node("order", Assistant(order_runnable))
 builder.add_edge("enter_order", "order")

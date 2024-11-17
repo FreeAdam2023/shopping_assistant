@@ -29,10 +29,10 @@ def view_cart(user_id: int) -> List[Dict]:
 
     try:
         query = """
-        SELECT p.id, p.name, p.price, c.quantity
-        FROM cart c
-        JOIN products p ON c.product_id = p.id
-        WHERE c.user_id = ?
+        SELECT p.id, p.name, p.price, cp.quantity
+        FROM cart_products cp
+        JOIN products p ON cp.product_id = p.id
+        WHERE cp.cart_id = (SELECT id FROM cart WHERE user_id = ?)
         """
         cursor.execute(query, (user_id,))
         results = cursor.fetchall()
@@ -47,29 +47,42 @@ def view_cart(user_id: int) -> List[Dict]:
 
 
 @tool
-def add_to_cart(user_id: int, product_id: int) -> str:
+def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
     """
     Add a product to the user's shopping cart.
 
     Args:
         user_id (int): The ID of the user.
         product_id (int): The ID of the product.
+        quantity (int): Quantity to add (default is 1).
 
     Returns:
         str: Confirmation message.
     """
-    logger.info(f"Adding product {product_id} to user {user_id}'s cart.")
+    logger.info(f"Adding product {product_id} to user {user_id}'s cart with quantity {quantity}.")
     conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
+        # 获取用户的购物车 ID
+        cursor.execute("SELECT id FROM cart WHERE user_id = ?", (user_id,))
+        cart_id = cursor.fetchone()
+
+        if not cart_id:
+            # 如果用户购物车不存在，创建新的购物车
+            cursor.execute("INSERT INTO cart (user_id) VALUES (?)", (user_id,))
+            cart_id = cursor.lastrowid
+        else:
+            cart_id = cart_id[0]
+
+        # 添加或更新购物车中的产品
         cursor.execute(
             """
-            INSERT INTO cart (user_id, product_id, quantity)
-            VALUES (?, ?, 1)
-            ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = quantity + 1
+            INSERT INTO cart_products (cart_id, product_id, quantity)
+            VALUES (?, ?, ?)
+            ON CONFLICT(cart_id, product_id) DO UPDATE SET quantity = quantity + excluded.quantity
             """,
-            (user_id, product_id),
+            (cart_id, product_id, quantity),
         )
         conn.commit()
         logger.info(f"Product {product_id} added to cart.")
@@ -98,7 +111,16 @@ def remove_from_cart(user_id: int, product_id: int) -> str:
     cursor = conn.cursor()
 
     try:
-        cursor.execute("DELETE FROM cart WHERE user_id = ? AND product_id = ?", (user_id, product_id))
+        # 获取用户的购物车 ID
+        cursor.execute("SELECT id FROM cart WHERE user_id = ?", (user_id,))
+        cart_id = cursor.fetchone()
+
+        if not cart_id:
+            logger.warning(f"User {user_id} does not have a cart.")
+            return f"No cart found for user {user_id}."
+
+        # 删除购物车中的产品
+        cursor.execute("DELETE FROM cart_products WHERE cart_id = ? AND product_id = ?", (cart_id[0], product_id))
         conn.commit()
 
         if cursor.rowcount > 0:
@@ -112,3 +134,13 @@ def remove_from_cart(user_id: int, product_id: int) -> str:
         raise
     finally:
         conn.close()
+
+
+if __name__ == "__main__":
+    # 测试代码
+    try:
+        print(view_cart(user_id=1))
+        print(add_to_cart(user_id=1, product_id=101, quantity=2))
+        print(remove_from_cart(user_id=1, product_id=101))
+    except Exception as e:
+        print(f"Test failed: {e}")

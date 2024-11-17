@@ -212,6 +212,7 @@ class ToCartAssistant(BaseModel):
     """Transfer work to a specialized assistant to handle hotel bookings."""
 
     product_id: int = Field(description="The id of the product which related to cart.")
+    quantity: int = Field(description="The count of product which will add to cart.")
 
     request: str = Field(
         description="Any additional information or requests from the user regarding the cart"
@@ -221,6 +222,7 @@ class ToCartAssistant(BaseModel):
         json_schema_extra = {
             "example": {
                 "product_id": 1,
+                "quantity": 3,
                 "request": "...",
             }
         }
