@@ -16,9 +16,12 @@ thread_id = str(uuid.uuid4())
 
 config = {
     "configurable": {
-        # The passenger_id is used in our flight tools to
-        # fetch the user's flight information
-        "user_id": 1,  # ticket no: 7240005432906569	book ref C46E9F	passenger id 3442 587242
+        # fetch the user's information
+        "user_id": 1,
+        "gender": 'Female',
+        "age": 25,
+        "name": 'Annie',
+        "address": "1375 Baseline Rd, Ottawa, ON K2C 3G1 Canada",
         # Checkpoints are accessed by thread_id
         "thread_id": thread_id,
     }

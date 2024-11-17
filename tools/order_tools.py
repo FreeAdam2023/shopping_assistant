@@ -16,12 +16,13 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-def checkout_order(user_id: int, conn=None) -> str:
+def checkout_order(user_id: int, address: str, conn=None) -> str:
     """
-    Proceed to checkout for the user's cart.
+    Proceed to checkout for the user's cart with a delivery address.
 
     Args:
         user_id (int): The ID of the user.
+        address (str): The delivery address for the order.
         conn
     Returns:
         str: Confirmation of the checkout process.
@@ -64,10 +65,11 @@ def checkout_order(user_id: int, conn=None) -> str:
         # Calculate total amount
         total_amount = sum(price * quantity for _, price, quantity, _ in cart_contents)
 
-        # Create an order
+        # Create an order with the given address
         cursor.execute("""
-        INSERT INTO orders (user_id, total_amount, created_at) VALUES (?, ?, datetime('now'))
-        """, (user_id, total_amount))
+        INSERT INTO orders (user_id, total_amount, delivery_address, created_at) 
+        VALUES (?, ?, ?, datetime('now'))
+        """, (user_id, total_amount, address))
         order_id = cursor.lastrowid
 
         # Insert order products and update stock
@@ -98,6 +100,7 @@ def checkout_order(user_id: int, conn=None) -> str:
     finally:
         if not conn:
             conn.close()
+
 
 
 def search_orders(order_id: int, conn=None) -> str:
@@ -311,17 +314,18 @@ def get_recent_orders(user_id: int, days: int = 7, conn=None) -> str:
 
 
 @tool
-def checkout_order_tool(user_id: int) -> str:
+def checkout_order_tool(user_id: int, address: str) -> str:
     """
-    Proceed to checkout for the user's cart.
+    Proceed to checkout for the user's cart with a delivery address.
 
     Args:
         user_id (int): The ID of the user.
-
+        address (str): The delivery address for the order.
+        conn
     Returns:
         str: Confirmation of the checkout process.
     """
-    return checkout_order(user_id)
+    return checkout_order(user_id, address)
 
 
 @tool

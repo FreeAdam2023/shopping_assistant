@@ -81,6 +81,8 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
             "system",
             "You are a product assistant specializing in helping users search for products, provice categories options, "
             "If the user does not provide a specific query but asks about product categories, always call `list_categories_tool`."
+            " When searching, be persistent. Expand your query bounds if the first search returns no results. "
+            "for example if using category could not find product then using name to try find one "
             "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
@@ -100,40 +102,6 @@ product_runnable = product_assistant_prompt | llm.bind_tools(
     product_tools + [CompleteOrEscalate]
 )
 
-# order  Assistant
-
-order_assistant_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "You are a specialized assistant for managing customer order queries and checkout processes. "
-            "Help users by providing detailed information about their orders based on their input. "
-            "If the user provides an order ID, retrieve details about that order. "
-            "If no order ID is provided, retrieve all orders for the given user. "
-            "For sensitive actions like checkout order, cancel order, change order address, "
-            "confirm with the user before proceeding."
-            "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
-            "\nCurrent time: {time}."
-            '\n\nIf the user needs help, and none of your tools are appropriate for it, '
-            'then "CompleteOrEscalate" the dialog to the host assistant.'
-            " Do not waste the user's time. Do not make up invalid tools or functions."
-            "\n\nSome examples for which you should CompleteOrEscalate:\n"
-            " - 'what's the weather like this time of year?'\n"
-            " - 'never mind i think I'll add more products'\n"
-            " - 'order confirmed'",
-        ),
-        ("placeholder", "{messages}"),
-    ]
-
-).partial(time=datetime.now)
-
-order_safe_tools = [search_orders_tool, get_recent_orders_tool]
-order_sensitive_tools = [checkout_order_tool, update_delivery_address_tool, cancel_order_tool]
-order_tools = order_safe_tools + order_sensitive_tools
-order_runnable = order_assistant_prompt | llm.bind_tools(
-    order_tools + [CompleteOrEscalate]
-)
-
 # Cart Assistant
 cart_assistant_prompt = ChatPromptTemplate.from_messages(
     [
@@ -141,8 +109,9 @@ cart_assistant_prompt = ChatPromptTemplate.from_messages(
             "system",
             "You are a cart assistant that helps users manage their shopping cart. "
             "You can assist with adding items to the cart, removing items from the cart, or viewing the cart's contents. "
-            "Provide clear feedback to the user about the actions you perform. For sensitive actions like adding or removing items, "
-            "confirm with the user before proceeding."
+            "Provide clear feedback to the user about the actions you perform. For sensitive actions like adding or "
+            "removing items, like which product to add, how many of product to add."
+            "confirm with the user before proceeding. provide total view info when user view their cart."
             " When searching, be persistent. Expand your query bounds if the first search returns no results. "
             "If you need more information or the customer changes their mind, escalate the task back to the main assistant."
             " Remember that a task isn't completed until after the relevant tool has successfully been used."
@@ -172,6 +141,43 @@ cart_runnable = cart_assistant_prompt | llm.bind_tools(
 )
 
 
+# order  Assistant
+
+order_assistant_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a specialized assistant for managing customer order queries and checkout processes. "
+            "Help users by providing detailed information about their orders based on their input. "
+            "If the user provides an order ID, retrieve details about that order. "
+            "If no order ID is provided, retrieve all orders for the given user. "
+            "If the user says 'calculate the cost,' 'I want to place an order,' or 'check out,' call the checkout tool."
+            "For sensitive actions like checkout order, cancel order, change order address, "
+            "if There is no special description. The default operation is the latest order."
+            "confirm with the user before proceeding."
+            "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
+            "\nCurrent time: {time}."
+            '\n\nIf the user needs help, and none of your tools are appropriate for it, '
+            'then "CompleteOrEscalate" the dialog to the host assistant.'
+            " Do not waste the user's time. Do not make up invalid tools or functions."
+            "\n\nSome examples for which you should CompleteOrEscalate:\n"
+            " - 'what's the weather like this time of year?'\n"
+            " - 'never mind i think I'll add more products'\n"
+            " - 'order confirmed'",
+        ),
+        ("placeholder", "{messages}"),
+    ]
+
+).partial(time=datetime.now)
+
+order_safe_tools = [search_orders_tool, get_recent_orders_tool]
+order_sensitive_tools = [checkout_order_tool, update_delivery_address_tool, cancel_order_tool]
+order_tools = order_safe_tools + order_sensitive_tools
+order_runnable = order_assistant_prompt | llm.bind_tools(
+    order_tools + [CompleteOrEscalate]
+)
+
+
 # Primary Assistant
 class ToProductAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle product-related queries."""
@@ -193,6 +199,28 @@ class ToProductAssistant(BaseModel):
         }
 
 
+
+class ToCartAssistant(BaseModel):
+    """Transfer work to a specialized assistant to handle hotel bookings."""
+
+    product_id: int = Field(description="The id of the product which related to cart.")
+    quantity: int = Field(description="The count of product which will add to cart.")
+
+    request: str = Field(
+        description="Any additional information or requests from the user regarding the cart like which product "
+                    "to add, how many of product to add"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "product_id": 1,
+                "quantity": 3,
+                "request": "...",
+            }
+        }
+
+
 class ToOrderAssistant(BaseModel):
     """Transfers work to a specialized assistant to handle car rental bookings."""
 
@@ -209,27 +237,6 @@ class ToOrderAssistant(BaseModel):
                 "request": "change to new address",
             }
         }
-
-
-class ToCartAssistant(BaseModel):
-    """Transfer work to a specialized assistant to handle hotel bookings."""
-
-    product_id: int = Field(description="The id of the product which related to cart.")
-    quantity: int = Field(description="The count of product which will add to cart.")
-
-    request: str = Field(
-        description="Any additional information or requests from the user regarding the cart"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "product_id": 1,
-                "quantity": 3,
-                "request": "...",
-            }
-        }
-
 
 primary_assistant_prompt = ChatPromptTemplate.from_messages(
     [

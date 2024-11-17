@@ -22,7 +22,8 @@ builder = StateGraph(State)
 
 
 def user_info(state: State):
-    return {"user_info": {"user_id": 1,  "gender": 'Female', "age": 25, "name": 'Annie'}}
+    return {"user_info": {"user_id": 1,  "gender": 'Female', "age": 25, "name": 'Annie',
+                          "address": "1375 Baseline Rd, Ottawa, ON K2C 3G1 Canada",}}
 
 
 builder.add_node("fetch_user_info", user_info)
