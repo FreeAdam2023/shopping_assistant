@@ -56,6 +56,7 @@ def create_tables(cursor):
         total_amount REAL NOT NULL, -- 订单总金额
         status TEXT CHECK(status IN ('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled')) DEFAULT 'Pending', -- 订单状态
         delivery_address TEXT DEFAULT NULL, -- 交货地址
+        payment_method TEXT NOT NULL, -- 付款方式
         cancellation_reason TEXT DEFAULT NULL, -- 取消原因
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 订单创建时间
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- 订单更新时间
@@ -133,25 +134,6 @@ def delete_database(db_path=None):
         raise
 
 
-def create_test_database_and_tables():
-    """
-    创建 SQLite 内存数据库及相关表，用于测试环境。
-    Returns:
-        conn: sqlite3.Connection 对象
-    """
-    try:
-        connection = sqlite3.connect(":memory:")
-        cursor = connection.cursor()
-        create_tables(cursor)
-        connection.commit()
-        print("In-memory test database and tables created successfully!")
-        return connection
-
-    except sqlite3.Error as e:
-        print(f"An error occurred while creating the in-memory test database: {e}")
-        raise
-
-
 if __name__ == "__main__":
     # 删除生产数据库
     delete_database()
@@ -160,11 +142,11 @@ if __name__ == "__main__":
     create_database_and_tables()
 
     # 创建测试数据库
-    test_conn = create_test_database_and_tables()
-    cursor = test_conn.cursor()
-    cursor.execute("INSERT INTO products (name, price, stock, category) VALUES (?, ?, ?, ?)",
-                   ("Test Product", 10.99, 100, "Test Category"))
-    test_conn.commit()
-
-    cursor.execute("SELECT * FROM products;")
-    print("Test Database Products:", cursor.fetchall())
+    # test_conn = create_test_database_and_tables()
+    # cursor = test_conn.cursor()
+    # cursor.execute("INSERT INTO products (name, price, stock, category) VALUES (?, ?, ?, ?)",
+    #                ("Test Product", 10.99, 100, "Test Category"))
+    # test_conn.commit()
+    #
+    # cursor.execute("SELECT * FROM products;")
+    # print("Test Database Products:", cursor.fetchall())

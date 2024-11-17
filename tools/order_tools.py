@@ -16,14 +16,16 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-def checkout_order(user_id: int, address: str, conn=None) -> str:
+def checkout_order(user_id: int, address: str, payment_method: str, conn=None) -> str:
     """
-    Proceed to checkout for the user's cart with a delivery address.
+    Proceed to checkout for the user's cart with a delivery address and payment method.
 
     Args:
         user_id (int): The ID of the user.
         address (str): The delivery address for the order.
-        conn
+        payment_method (str): The selected payment method for the order.
+        conn: Optional database connection.
+
     Returns:
         str: Confirmation of the checkout process.
     """
@@ -62,14 +64,20 @@ def checkout_order(user_id: int, address: str, conn=None) -> str:
             logger.warning(f"Insufficient stock for some items: {issues}")
             return f"Checkout failed due to insufficient stock:\n{issues}"
 
+        # Validate payment method
+        valid_payment_methods = ["Credit Card", "PayPal", "Apple Pay", "Google Pay", "Bank Transfer"]
+        if payment_method not in valid_payment_methods:
+            logger.warning(f"Invalid payment method selected: {payment_method}.")
+            return f"Invalid payment method. Available methods are: {', '.join(valid_payment_methods)}."
+
         # Calculate total amount
         total_amount = sum(price * quantity for _, price, quantity, _ in cart_contents)
 
-        # Create an order with the given address
+        # Create an order with the given address and payment method
         cursor.execute("""
-        INSERT INTO orders (user_id, total_amount, delivery_address, created_at) 
-        VALUES (?, ?, ?, datetime('now'))
-        """, (user_id, total_amount, address))
+        INSERT INTO orders (user_id, total_amount, delivery_address, payment_method, created_at) 
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """, (user_id, total_amount, address, payment_method))
         order_id = cursor.lastrowid
 
         # Insert order products and update stock
@@ -100,6 +108,7 @@ def checkout_order(user_id: int, address: str, conn=None) -> str:
     finally:
         if not conn:
             conn.close()
+
 
 
 

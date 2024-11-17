@@ -14,7 +14,7 @@ from langchain_openai import ChatOpenAI
 from state.state import State
 from pydantic import BaseModel, Field
 
-from tools.policy_tools import query_policy_tool
+from tools.policy_tools import query_policy_tool, query_payment_methods_tool
 from tools.product_tools import search_and_recommend_products_tool, list_categories_tool
 from tools.order_tools import (search_orders_tool, checkout_order_tool, update_delivery_address_tool, cancel_order_tool,
                                get_recent_orders_tool)
@@ -243,6 +243,7 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             "You are a shopping assistant handling general queries about shopping, company policies, and products. "
+            "payment_methods query"
             "You can delegate specific tasks to specialized assistants for managing orders, carts, or product queries. "
             "For example:\n"
             "- If the query involves adding or removing products to/from the cart or viewing the cart, "
@@ -264,6 +265,7 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
 primary_assistant_tools = [
     TavilySearchResults(max_results=1, tavily_api_key=os.getenv('TAVILY_API_KEY')),
     query_policy_tool,
+    query_payment_methods_tool,
 ]
 assistant_runnable = primary_assistant_prompt | llm.bind_tools(
     primary_assistant_tools
