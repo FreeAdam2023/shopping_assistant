@@ -121,8 +121,8 @@ def insert_sample_products():
 
         # 插入 2 条库存为 0 的产品
         zero_stock_products = [
-            ("Test Product 1", "This is a test product with zero stock.", 99.99, 0, "Test Category", "Red", "Large", "{}"),
-            ("Test Product 2", "This is another test product with zero stock.", 49.99, 0, "Test Category", "Blue", "Medium", "{}")
+            ("LV bag", "This is a test product with zero stock.", 99.99, 0, "Clothing", "Red", "Large", "{}"),
+            ("Women Scarves", "This is another test product with zero stock.", 49.99, 0, "Clothing", "Blue", "Medium", "{}")
         ]
         cursor.executemany("""
         INSERT INTO products (name, description, price, stock, category, color, size, additional_specs)
