@@ -16,18 +16,19 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-def checkout_order(user_id: int) -> str:
+def checkout_order(user_id: int, conn=None) -> str:
     """
     Proceed to checkout for the user's cart.
 
     Args:
         user_id (int): The ID of the user.
-
+        conn
     Returns:
         str: Confirmation of the checkout process.
     """
-    logger.info(f"Processing checkout for user {user_id}.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Retrieving cart contents for user {user_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -95,21 +96,23 @@ def checkout_order(user_id: int) -> str:
         conn.rollback()
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
-def search_orders(order_id: int) -> str:
+def search_orders(order_id: int, conn=None) -> str:
     """
     Get the details of a specific order.
 
     Args:
         order_id (int): The ID of the order.
-
+        conn
     Returns:
         str: The order details.
     """
-    logger.info(f"Retrieving details for order {order_id}.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Retrieving cart contents for order {order_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -153,22 +156,24 @@ def search_orders(order_id: int) -> str:
         logger.error(f"Error retrieving order details for order {order_id}: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
-def update_delivery_address(order_id: int, new_address: str) -> str:
+def update_delivery_address(order_id: int, new_address: str, conn=None) -> str:
     """
     Update the delivery address of an order.
 
     Args:
         order_id (int): The ID of the order.
         new_address (str): The new delivery address.
-
+        conn
     Returns:
         str: Confirmation of the update.
     """
-    logger.info(f"Updating delivery address for order {order_id}.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Updating delivery address for order {order_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -199,22 +204,24 @@ def update_delivery_address(order_id: int, new_address: str) -> str:
         logger.error(f"Error updating delivery address for order {order_id}: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
-def cancel_order(order_id: int, reason: str) -> str:
+def cancel_order(order_id: int, reason: str, conn=None) -> str:
     """
     Cancel an order and provide a cancellation reason.
 
     Args:
         order_id (int): The ID of the order.
         reason (str): Reason for cancelling the order.
-
+        conn
     Returns:
         str: Confirmation of the cancellation.
     """
-    logger.info(f"Cancelling order {order_id}.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Cancelling order {order_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -245,22 +252,24 @@ def cancel_order(order_id: int, reason: str) -> str:
         logger.error(f"Error cancelling order {order_id}: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
-def get_recent_orders(user_id: int, days: int = 7) -> str:
+def get_recent_orders(user_id: int, days: int = 7, conn=None) -> str:
     """
     Retrieve recent orders for a user within the specified number of days.
 
     Args:
         user_id (int): The ID of the user.
         days (int): The number of days to look back. Default is 7 days.
-
+        conn
     Returns:
         str: JSON-formatted list of recent orders.
     """
-    logger.info(f"Retrieving recent orders for user {user_id} within the last {days} days.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Retrieving recent orders for user {user_id} within the last {days} days.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -297,7 +306,8 @@ def get_recent_orders(user_id: int, days: int = 7) -> str:
         logger.error(f"Error retrieving recent orders for user {user_id}: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
 @tool

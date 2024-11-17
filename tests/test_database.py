@@ -74,54 +74,54 @@ def populate_test_data(conn):
 
 def test_view_cart(conn):
     print("Testing view_cart...")
-    pprint(view_cart(1))
+    pprint(view_cart(1, conn=conn))
 
 
 def test_add_to_cart(conn):
     print("Testing add_to_cart...")
-    print(add_to_cart(1, 3, 2))  # Add Product C
-    pprint(view_cart(1))
+    print(add_to_cart(1, 3, 2, conn=conn))  # Add Product C
+    pprint(view_cart(1, conn=conn))
 
 
 def test_remove_from_cart(conn):
     print("Testing remove_from_cart...")
-    print(remove_from_cart(1, 1))  # Remove Product A
-    pprint(view_cart(1))
+    print(remove_from_cart(1, 1, conn=conn))  # Remove Product A
+    pprint(view_cart(1, conn=conn))
 
 
 def test_checkout_order(conn):
     print("Testing checkout_order...")
-    print(checkout_order(1))
+    print(checkout_order(1, conn=conn))
 
 
 def test_search_orders(conn):
     print("Testing search_orders...")
-    pprint(search_orders(1))
+    pprint(search_orders(1, conn=conn))
 
 
 def test_update_delivery_address(conn):
     print("Testing update_delivery_address...")
-    print(update_delivery_address(1, "456 New Address"))
+    print(update_delivery_address(1, "456 New Address", conn=conn))
 
 
 def test_cancel_order(conn):
     print("Testing cancel_order...")
-    print(cancel_order(1, "User decided not to proceed."))
+    print(cancel_order(1, "User decided not to proceed.", conn=conn))
 
 
 def test_get_recent_orders(conn):
     print("Testing get_recent_orders...")
-    pprint(get_recent_orders(1, 30))
+    pprint(get_recent_orders(1, 30, conn=conn))
 
 
 def test_list_categories(conn):
     print("Testing list_categories...")
-    pprint(list_categories())
+    pprint(list_categories(conn=conn))
 
 
 def test_search_and_recommend_products(conn):
     print("Testing search_and_recommend_products...")
-    pprint(search_and_recommend_products(name="Product", category="Category 1", price_range="10-30"))
+    pprint(search_and_recommend_products(name="Product", category="Category 1", price_range="10-30", conn=conn))
 
 
 def main():

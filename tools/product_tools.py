@@ -12,7 +12,7 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-def list_categories() -> List[str]:
+def list_categories(conn=None) -> List[str]:
     """
     List all available product categories in the database.
 
@@ -23,7 +23,8 @@ def list_categories() -> List[str]:
 
     try:
         # 打开数据库连接
-        conn = sqlite3.connect(db)
+        if not conn:
+            conn = sqlite3.connect(db)
         cursor = conn.cursor()
 
         # 查询所有类别
@@ -55,6 +56,7 @@ def search_and_recommend_products(
         name: Optional[str] = None,
         category: Optional[str] = None,
         price_range: Optional[str] = None,
+        conn=None,
 ) -> Dict[str, List[Dict]]:
     """
     Search for products based on name, category, and price range, and recommend related products.
@@ -63,7 +65,7 @@ def search_and_recommend_products(
         name (str): The product name or partial name to search for.
         category (str): The category to filter products by.
         price_range (str): A price range in the format "min-max".
-
+        conn
     Returns:
         Dict[str, List[Dict]]: A dictionary with search results and recommendations.
     """
@@ -72,7 +74,8 @@ def search_and_recommend_products(
 
     try:
         # 打开数据库连接
-        conn = sqlite3.connect(db)
+        if not conn:
+            conn = sqlite3.connect(db)
         cursor = conn.cursor()
 
         # 构建查询

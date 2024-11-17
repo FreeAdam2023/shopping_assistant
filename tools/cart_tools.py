@@ -12,18 +12,19 @@ from utils.logger import logger
 db = os.path.join(os.path.dirname(__file__), "../data/ecommerce.db")
 
 
-def view_cart(user_id: int) -> List[Dict]:
+def view_cart(user_id: int, conn=None) -> List[Dict]:
     """
     View the contents of the user's shopping cart.
 
     Args:
         user_id (int): The ID of the user.
-
+        conn:
     Returns:
         List[Dict]: A list of products in the user's cart with their quantities.
     """
-    logger.info(f"Retrieving cart contents for user {user_id}.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Retrieving cart contents for user {user_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -42,10 +43,11 @@ def view_cart(user_id: int) -> List[Dict]:
         logger.error(f"Error viewing cart: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
-def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
+def add_to_cart(user_id: int, product_id: int, quantity: int = 1, conn=None) -> str:
     """
     Add a product to the user's shopping cart.
 
@@ -53,12 +55,12 @@ def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
         user_id (int): The ID of the user.
         product_id (int): The ID of the product.
         quantity (int): Quantity to add (default is 1).
-
     Returns:
         str: Confirmation message.
     """
-    logger.info(f"Adding product {product_id} to user {user_id}'s cart with quantity {quantity}.")
-    conn = sqlite3.connect(db)
+    if conn is None:
+        logger.info(f"Connecting to database to retrieve cart for user {user_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -69,9 +71,24 @@ def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
         if not cart_id:
             # 如果用户购物车不存在，创建新的购物车
             cursor.execute("INSERT INTO cart (user_id) VALUES (?)", (user_id,))
+            conn.commit()  # 提交以确保 ID 可用
             cart_id = cursor.lastrowid
         else:
             cart_id = cart_id[0]
+
+        # 确保 cart_products 表具有唯一约束
+        cursor.execute("""
+            PRAGMA index_list(cart_products);
+        """)
+        indexes = cursor.fetchall()
+        unique_constraint_found = any("cart_id" in idx[1] and "product_id" in idx[1] for idx in indexes)
+
+        if not unique_constraint_found:
+            cursor.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_cart_product 
+                ON cart_products(cart_id, product_id);
+            """)
+            conn.commit()
 
         # 添加或更新购物车中的产品
         cursor.execute(
@@ -85,26 +102,32 @@ def add_to_cart(user_id: int, product_id: int, quantity: int = 1) -> str:
         conn.commit()
         logger.info(f"Product {product_id} added to cart.")
         return f"Product {product_id} successfully added to your cart."
+    except sqlite3.OperationalError as op_err:
+        logger.error(f"Database operational error: {op_err}")
+        return "Database operation failed. Please try again."
     except Exception as e:
         logger.error(f"Error adding to cart: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
 
 
-def remove_from_cart(user_id: int, product_id: int) -> str:
+
+def remove_from_cart(user_id: int, product_id: int, conn=None) -> str:
     """
     Remove a product from the user's shopping cart.
 
     Args:
         user_id (int): The ID of the user.
         product_id (int): The ID of the product.
-
+        conn
     Returns:
         str: Confirmation message.
     """
-    logger.info(f"Removing product {product_id} from user {user_id}'s cart.")
-    conn = sqlite3.connect(db)
+    if not conn:
+        logger.info(f"Retrieving cart contents for user {user_id}.")
+        conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     try:
@@ -130,7 +153,9 @@ def remove_from_cart(user_id: int, product_id: int) -> str:
         logger.error(f"Error removing from cart: {e}")
         raise
     finally:
-        conn.close()
+        if not conn:
+            conn.close()
+
 
 @tool
 def view_cart_tool(user_id: int) -> List[Dict]:
@@ -175,7 +200,6 @@ def remove_from_cart_tool(user_id: int, product_id: int) -> str:
         str: A confirmation message indicating success or failure.
     """
     return remove_from_cart(user_id, product_id)
-
 
 
 if __name__ == "__main__":
