@@ -150,109 +150,6 @@ def search_and_recommend_products(
             conn.close()
 
 
-def update_stock_on_order(order_id: int, conn=None):
-    """
-    Update product stock when an order is activated or completed.
-
-    Args:
-        order_id (int): The ID of the order.
-        conn: SQLite database connection.
-    """
-    logger.info(f"Updating stock for order {order_id}.")
-
-    try:
-        # 打开数据库连接
-        if not conn:
-            conn = sqlite3.connect(db)
-        cursor = conn.cursor()
-
-        # 查询订单中产品及其数量
-        query = """
-        SELECT product_id, quantity 
-        FROM order_products
-        WHERE order_id = ?
-        """
-        cursor.execute(query, (order_id,))
-        products = cursor.fetchall()
-
-        # 更新库存
-        for product_id, quantity in products:
-            cursor.execute("""
-            UPDATE products
-            SET stock = stock - ?
-            WHERE id = ?
-            AND stock >= ?
-            """, (quantity, product_id, quantity))
-
-            if cursor.rowcount == 0:
-                logger.warning(f"Product {product_id} has insufficient stock for order {order_id}.")
-
-        # 提交更改
-        conn.commit()
-        logger.info(f"Stock updated successfully for order {order_id}.")
-
-    except sqlite3.Error as e:
-        logger.error(f"Database error while updating stock for order {order_id}: {e}")
-        conn.rollback()
-
-    except Exception as e:
-        logger.error(f"Unexpected error while updating stock for order {order_id}: {e}")
-        conn.rollback()
-
-    finally:
-        if not conn:
-            conn.close()
-
-
-def update_stock_on_cancellation(order_id: int, conn=None):
-    """
-    Restore product stock when an order is cancelled.
-
-    Args:
-        order_id (int): The ID of the cancelled order.
-        conn: SQLite database connection.
-    """
-    logger.info(f"Restoring stock for cancelled order {order_id}.")
-
-    try:
-        # 打开数据库连接
-        if not conn:
-            conn = sqlite3.connect(db)
-        cursor = conn.cursor()
-
-        # 查询订单中产品及其数量
-        query = """
-        SELECT product_id, quantity 
-        FROM order_products
-        WHERE order_id = ?
-        """
-        cursor.execute(query, (order_id,))
-        products = cursor.fetchall()
-
-        # 恢复库存
-        for product_id, quantity in products:
-            cursor.execute("""
-            UPDATE products
-            SET stock = stock + ?
-            WHERE id = ?
-            """, (quantity, product_id))
-
-        # 提交更改
-        conn.commit()
-        logger.info(f"Stock restored successfully for cancelled order {order_id}.")
-
-    except sqlite3.Error as e:
-        logger.error(f"Database error while restoring stock for order {order_id}: {e}")
-        conn.rollback()
-
-    except Exception as e:
-        logger.error(f"Unexpected error while restoring stock for order {order_id}: {e}")
-        conn.rollback()
-
-    finally:
-        if not conn:
-            conn.close()
-
 
 def check_product_stock(product_id: int, conn=None) -> Optional[Dict]:
     """
@@ -331,29 +228,29 @@ def search_and_recommend_products_tool(name: Optional[str] = None, category: Opt
         """
     return search_and_recommend_products(name, category, price_range)
 
-
-@tool
-def update_stock_on_cancellation_tool(order_id: int, conn=None):
-    """
-    Restore product stock when an order is cancelled.
-
-    Args:
-        order_id (int): The ID of the cancelled order.
-        conn: SQLite database connection.
-    """
-    return update_stock_on_cancellation(order_id, conn)
-
-
-@tool
-def update_stock_on_order_tool(order_id: int, conn=None):
-    """
-    Update product stock when an order is activated or completed.
-
-    Args:
-        order_id (int): The ID of the order.
-        conn: SQLite database connection.
-    """
-    return update_stock_on_order(order_id, conn)
+#
+# @tool
+# def update_stock_on_cancellation_tool(order_id: int, conn=None):
+#     """
+#     Restore product stock when an order is cancelled.
+#
+#     Args:
+#         order_id (int): The ID of the cancelled order.
+#         conn: SQLite database connection.
+#     """
+#     return update_stock_on_cancellation(order_id, conn)
+#
+#
+# @tool
+# def update_stock_on_order_tool(order_id: int, conn=None):
+#     """
+#     Update product stock when an order is activated or completed.
+#
+#     Args:
+#         order_id (int): The ID of the order.
+#         conn: SQLite database connection.
+#     """
+#     return update_stock_on_order(order_id, conn)
 
 
 @tool

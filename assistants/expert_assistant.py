@@ -15,8 +15,7 @@ from state.state import State
 from pydantic import BaseModel, Field
 
 from tools.policy_tools import query_policy_tool, query_payment_methods_tool
-from tools.product_tools import search_and_recommend_products_tool, list_categories_tool, \
-    update_stock_on_cancellation_tool, update_stock_on_order_tool, check_product_stock_tool
+from tools.product_tools import search_and_recommend_products_tool, list_categories_tool, check_product_stock_tool
 from tools.order_tools import (search_orders_tool, checkout_order_tool, update_delivery_address_tool, cancel_order_tool,
                                get_recent_orders_tool)
 from tools.cart_tools import add_to_cart_tool, view_cart_tool, remove_from_cart_tool
@@ -86,6 +85,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
             "for example if using category could not find product then using name to try find one "
             "If the product the user wants to buy is not available, we will tell the user that it is not available. "
             "You can modify the stock data when the user places an order, restores the order, or cancels the order."
+            "You cannot handle the task of deleting or adding products to the shopping cart. You need to leave it to the shopping cart assistant."
             "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."
@@ -99,7 +99,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
 ).partial(time=datetime.now)
 
 product_safe_tools = [search_and_recommend_products_tool, list_categories_tool, check_product_stock_tool]
-product_sensitive_tools = [update_stock_on_cancellation_tool, update_stock_on_order_tool]
+product_sensitive_tools = []
 product_tools = product_safe_tools + product_sensitive_tools
 product_runnable = product_assistant_prompt | llm.bind_tools(
     product_tools + [CompleteOrEscalate]
@@ -114,6 +114,7 @@ cart_assistant_prompt = ChatPromptTemplate.from_messages(
             "You can assist with adding items to the cart, removing items from the cart, or viewing the cart's contents. "
             "Provide clear feedback to the user about the actions you perform. For sensitive actions like adding or "
             "removing items, like which product to add, how many of product to add."
+            "If there are no items in the shopping cart to be deleted, politely inform the user"
             "confirm with the user before proceeding. provide total view info when user view their cart."
             " When searching, be persistent. Expand your query bounds if the first search returns no results. "
             "If you need more information or the customer changes their mind, escalate the task back to the main assistant."
@@ -265,6 +266,11 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
             "\nAlways double-check the database before concluding that information is unavailable. "
             "Do not make up invalid categories, product names, or order details. "
             "Provide clear instructions to specialized assistants and ensure seamless task completion.\n"
+            " Only the specialized assistants are given permission to do this for the user."
+            "The user is not aware of the different specialized assistants, so do not mention them; just quietly delegate through function calls. "
+            "Provide detailed information to the customer, and always double-check the database before concluding that information is unavailable. "
+            " When searching, be persistent. Expand your query bounds if the first search returns no results. "
+            " If a search comes up empty, expand your search before giving up."
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}.",
         ),

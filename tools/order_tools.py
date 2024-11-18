@@ -99,6 +99,7 @@ def checkout_order(user_id: int, address: str, payment_method: str, conn=None) -
         conn.commit()
 
         logger.info(f"Checkout complete for user {user_id}. Order ID: {order_id}.")
+        update_stock_on_order(order_id)
         return f"Checkout successful! Your order ID is {order_id}. Total amount: ${total_amount:.2f}."
 
     except Exception as e:
@@ -321,6 +322,109 @@ def get_recent_orders(user_id: int, days: int = 7, conn=None) -> str:
         if not conn:
             conn.close()
 
+def update_stock_on_order(order_id: int, conn=None):
+    """
+    Update product stock when an order is activated or completed.
+
+    Args:
+        order_id (int): The ID of the order.
+        conn: SQLite database connection.
+    """
+    logger.info(f"Updating stock for order {order_id}.")
+
+    try:
+        # 打开数据库连接
+        if not conn:
+            conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # 查询订单中产品及其数量
+        query = """
+        SELECT product_id, quantity 
+        FROM order_products
+        WHERE order_id = ?
+        """
+        cursor.execute(query, (order_id,))
+        products = cursor.fetchall()
+
+        # 更新库存
+        for product_id, quantity in products:
+            cursor.execute("""
+            UPDATE products
+            SET stock = stock - ?
+            WHERE id = ?
+            AND stock >= ?
+            """, (quantity, product_id, quantity))
+
+            if cursor.rowcount == 0:
+                logger.warning(f"Product {product_id} has insufficient stock for order {order_id}.")
+
+        # 提交更改
+        conn.commit()
+        logger.info(f"Stock updated successfully for order {order_id}.")
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error while updating stock for order {order_id}: {e}")
+        conn.rollback()
+
+    except Exception as e:
+        logger.error(f"Unexpected error while updating stock for order {order_id}: {e}")
+        conn.rollback()
+
+    finally:
+        if not conn:
+            conn.close()
+
+
+def update_stock_on_cancellation(order_id: int, conn=None):
+    """
+    Restore product stock when an order is cancelled.
+
+    Args:
+        order_id (int): The ID of the cancelled order.
+        conn: SQLite database connection.
+    """
+    logger.info(f"Restoring stock for cancelled order {order_id}.")
+
+    try:
+        # 打开数据库连接
+        if not conn:
+            conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # 查询订单中产品及其数量
+        query = """
+        SELECT product_id, quantity 
+        FROM order_products
+        WHERE order_id = ?
+        """
+        cursor.execute(query, (order_id,))
+        products = cursor.fetchall()
+
+        # 恢复库存
+        for product_id, quantity in products:
+            cursor.execute("""
+            UPDATE products
+            SET stock = stock + ?
+            WHERE id = ?
+            """, (quantity, product_id))
+
+        # 提交更改
+        conn.commit()
+        logger.info(f"Stock restored successfully for cancelled order {order_id}.")
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error while restoring stock for order {order_id}: {e}")
+        conn.rollback()
+
+    except Exception as e:
+        logger.error(f"Unexpected error while restoring stock for order {order_id}: {e}")
+        conn.rollback()
+
+    finally:
+        if not conn:
+            conn.close()
+
 
 @tool
 def checkout_order_tool(user_id: int, address: str, payment_method: str, conn=None) -> str:
@@ -335,8 +439,8 @@ def checkout_order_tool(user_id: int, address: str, payment_method: str, conn=No
     Returns:
         str: Confirmation of the checkout process.
     """
-    return checkout_order(user_id, address, payment_method)
-
+    ret = checkout_order(user_id, address, payment_method)
+    return ret
 
 @tool
 def search_orders_tool(order_id: int) -> str:
@@ -379,7 +483,9 @@ def cancel_order_tool(order_id: int, reason: str) -> str:
     Returns:
         str: Confirmation of the cancellation.
     """
-    return cancel_order(order_id, reason)
+    ret = cancel_order(order_id, reason)
+    update_stock_on_cancellation(order_id)
+    return ret
 
 
 @tool
