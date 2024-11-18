@@ -85,7 +85,7 @@ product_assistant_prompt = ChatPromptTemplate.from_messages(
             "for example if using category could not find product then using name to try find one "
             "If the product the user wants to buy is not available, we will tell the user that it is not available. "
             "You can modify the stock data when the user places an order, restores the order, or cancels the order."
-            "You cannot handle the task of deleting or adding products to the shopping cart. You need to leave it to the shopping cart assistant."
+            "You cannot handle the task of deleting or adding products to the shopping cart. You need to call the cart assistant."
             "Don’t make up products or categories that don’t exist"
             "\n\nCurrent user information:\n<User>\n{user_info}\n</User>"
             "\nCurrent time: {time}."

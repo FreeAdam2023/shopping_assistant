@@ -72,4 +72,7 @@ pip install -r requirements.txt
 
 python tests/test_assistant.py
 
+report check Shopping Assistant Report.docx
+
+
 
